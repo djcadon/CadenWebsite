@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="cadenwebsite.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
