@@ -1,8 +1,8 @@
 import { sortedExperiences } from "../constants/experiences";
 
 function Archive() {
-  const archivedExperiences = sortedExperiences.filter(
-    (experience) => experience.archive,
+  const archivedExperiences = sortedExperiences.filter((experience) =>
+    experience.roles.some((role) => role.archive),
   );
 
   return (
@@ -23,7 +23,7 @@ function Archive() {
         {archivedExperiences.map((experience, index) => (
           <article
             className="grid gap-5 border-b border-line py-7 sm:grid-cols-[60px_1fr_1fr] sm:gap-8"
-            key={experience.company + experience.date}
+            key={experience.company}
           >
             <span className="font-mono text-[11px] text-muted">
               0{index + 1}
@@ -32,13 +32,16 @@ function Archive() {
               <h2 className="m-0 text-[22px] font-normal">
                 {experience.company}
               </h2>
-              {experience.roles.map((role) => (
-                <div className="mt-5" key={role.title + role.meta}>
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-[.08em] text-muted">
+                {experience.location}
+              </p>
+              {experience.roles.filter((role) => role.archive).map((role) => (
+                <div className="mt-5" key={role.title + role.period.label}>
                   <p className="font-mono text-[11px] text-[#93b8d8]">
                     {role.title}
                   </p>
                   <p className="mt-1 font-mono text-[10px] uppercase tracking-[.08em] text-muted">
-                    {role.meta}
+                    {role.period.label}
                   </p>
                   <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-6 text-muted">
                     {role.description.map((point) => (
@@ -49,20 +52,22 @@ function Archive() {
               ))}
             </div>
             <div>
-              {experience.roles.map((role) => (
-                <div className="mb-6 last:mb-0" key={role.title + role.meta}>
-                  <p className="mb-3 font-mono text-[10px] uppercase tracking-[.1em] text-[#93b8d8]">
-                    Tools used
-                  </p>
-                  <ul className="flex flex-wrap gap-2 p-0 font-mono text-[10px] text-muted">
-                    {role.tools.map((tool) => (
-                      <li className="border border-line px-2 py-1" key={tool}>
-                        {tool}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+              <p className="mb-3 font-mono text-[10px] uppercase tracking-[.1em] text-[#93b8d8]">
+                Tools used
+              </p>
+              <ul className="flex flex-wrap gap-2 p-0 font-mono text-[10px] text-muted">
+                {[...new Set(
+                  experience.roles
+                    .filter((role) => role.archive)
+                    .flatMap((role) => role.tools),
+                )]
+                  .sort((first, second) => first.localeCompare(second))
+                  .map((tool) => (
+                    <li className="border border-line px-2 py-1" key={tool}>
+                      {tool}
+                    </li>
+                  ))}
+              </ul>
             </div>
           </article>
         ))}

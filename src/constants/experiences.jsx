@@ -1,12 +1,17 @@
 export const experiences = [
   {
     company: "Cincinnati Incorporated",
-    date: "2026-05-01",
-    archive: false,
+    location: "Harrison, Ohio",
+    sortDate: "2026-05-01",
     roles: [
       {
+        archive: false,
         title: "Software Engineering COOP",
-        meta: "May 2026 — Aug 2026",
+        period: {
+          start: "2026-05-01",
+          end: "2026-08-01",
+          label: "May 2026 — Aug 2026",
+        },
         tools: [
           "Python",
           "RAG",
@@ -22,8 +27,13 @@ export const experiences = [
         ],
       },
       {
+        archive: false,
         title: "Software Engineering COOP",
-        meta: "Sep 2025 — Dec 2025",
+        period: {
+          start: "2025-09-01",
+          end: "2025-12-01",
+          label: "Sep 2025 — Dec 2025",
+        },
         tools: ["React", "Vite", "FastAPI", "Python"],
         description: [
           "Implemented SSO with PC/CS card readers.",
@@ -34,12 +44,17 @@ export const experiences = [
   },
   {
     company: "UC CubeCats",
-    date: "2026-01-01",
-    archive: false,
+    location: "University of Cincinnati",
+    sortDate: "2026-01-01",
     roles: [
       {
+        archive: false,
         title: "HabSat-1 Ground Station Team Lead",
-        meta: "Jan 2026 — Present",
+        period: {
+          start: "2026-01-01",
+          end: null,
+          label: "Jan 2026 — Present",
+        },
         tools: ["Software-defined radio", "Yagi antenna", "SQL", "FastAPI"],
         description: [
           "Lead the HabSat-1 ground station team at CAS in collaboration with UCARC.",
@@ -47,16 +62,51 @@ export const experiences = [
           "Developed backend infrastructure for mission-data storage.",
         ],
       },
+      {
+        archive: true,
+        title: "LEOPARDSat-1 OBC Team",
+        period: {
+          start: "2025-06-01",
+          end: "2025-12-01",
+          label: "June 2025 — Dec 2025",
+        },
+        tools: ["STM32"],
+        description: [
+          "Supported the On-Board Computer team through quality assurance and software testing.",
+          "Contributed to hardware integration for a CubeSat mission.",
+          "Supported research on solar radiation effects on carbon-composite materials.",
+        ],
+      },
+      {
+        archive: true,
+        title: "Calico HAB Software Team",
+        period: {
+          start: "2024-08-01",
+          end: "2025-05-01",
+          label: "Aug 2024 — May 2025",
+        },
+        tools: ["C++", "GPS", "Sensors"],
+        description: [
+          "Contributed to Project Calico, a high-altitude balloon mission.",
+          "Collected environmental data and transmitted live sensor readings.",
+          "Tracked the balloon with GPS location data from the stratosphere.",
+        ],
+      },
     ],
   },
   {
     company: "Innovative Plastic Molders",
-    date: "2024-05-01",
-    archive: false,
+    location: "Vandalia, Ohio",
+    sortDate: "2024-05-01",
     roles: [
       {
+        archive: false,
         title: "Software Developer Intern",
-        meta: "May 2024 — Sep 2025",
+        period: {
+          start: "2024-05-01",
+          end: "2025-09-01",
+          label: "May 2024 — Sep 2025",
+        },
         tools: ["Raspberry Pi", "SQL", "Python"],
         description: [
           "Built Raspberry Pi-based retrieval for injection molding machine data.",
@@ -67,51 +117,59 @@ export const experiences = [
     ],
   },
   {
-    company: "UC CubeCats",
-    date: "2025-06-01",
-    archive: true,
-    roles: [
-      {
-        title: "LEOPARDSat-1 OBC Team",
-        meta: "June 2025 — Dec 2025",
-        tools: ["STM32"],
-        description: [
-          "Supported the On-Board Computer team through quality assurance and software testing.",
-          "Contributed to hardware integration for a CubeSat mission.",
-          "Supported research on solar radiation effects on carbon-composite materials.",
-        ],
-      },
-    ],
-  },
-  {
     company: "MakeUC",
-    date: "2025-11-01",
-    archive: true,
+    location: "University of Cincinnati",
+    sortDate: "2025-11-01",
     roles: [
       {
+        archive: true,
         title: "Kinetic Vision Challenge",
-        meta: "November 2025",
+        period: {
+          start: "2025-11-01",
+          end: "2025-11-01",
+          label: "November 2025",
+        },
         tools: ["Python", "React", "Vite", "FastAPI"],
         description: [
           "Built a household IoT dashboard using an existing API.",
           "Created a centralized interface for monitoring connected home data.",
         ],
       },
+      {
+        archive: true,
+        title: "GCS / Geometric Code Slicer",
+        period: {
+          start: "2024-01-01",
+          end: "2024-01-01",
+          label: "MakeUC 2024",
+        },
+        tools: ["Python", "Flask", "JavaScript", "Tailwind CSS", "G-code"],
+        description: [
+          "Engineered a G-code parsing and conversion system.",
+          "Generated .obj 3D models and .gif animated previews.",
+        ],
+      },
     ],
   },
   {
     company: "NASA Space Apps Hackathon",
-    date: "2025-11-01",
-    archive: true,
+    location: "University of Cincinnati",
+    sortDate: "2025-11-01",
     roles: [
       {
+        archive: true,
         title: "BioRAG",
-        meta: "2025 · Space Biology Knowledge Engine",
+        period: {
+          start: "2025-11-01",
+          end: "2025-11-01",
+          label: "NASA Hackathon 2025",
+        },
         tools: [
           "FastAPI",
           "Python",
           "Supabase",
           "FAISS",
+          "LLaMA 2",
           "Ollama",
           "React",
         ],
@@ -125,46 +183,18 @@ export const experiences = [
     ],
   },
   {
-    company: "UC CubeCats",
-    date: "2024-08-01",
-    archive: true,
-    roles: [
-      {
-        title: "Calico HAB Software Team",
-        meta: "Aug 2024 — May 2025",
-        tools: ["C++", "GPS", "Sensors"],
-        description: [
-          "Contributed to Project Calico, a high-altitude balloon mission.",
-          "Collected environmental data and transmitted live sensor readings.",
-          "Tracked the balloon with GPS location data from the stratosphere.",
-        ],
-      },
-    ],
-  },
-  {
-    company: "University of Cincinnati",
-    date: "2024-01-01",
-    archive: true,
-    roles: [
-      {
-        title: "GCS / Geometric Code Slicer",
-        meta: "Make UC 2024",
-        tools: ["Python", "Flask", "JavaScript", "Tailwind CSS", "G-code"],
-        description: [
-          "Engineered a G-code parsing and conversion system.",
-          "Generated .obj 3D models and .gif animated previews.",
-        ],
-      },
-    ],
-  },
-  {
     company: "The Superior Group",
-    date: "2023-08-01",
-    archive: true,
+    location: "Columbus, Ohio",
+    sortDate: "2023-08-01",
     roles: [
       {
+        archive: true,
         title: "Electrical Engineering Intern",
-        meta: "Aug 2023 — Dec 2023",
+        period: {
+          start: "2023-08-01",
+          end: "2023-12-01",
+          label: "Aug 2023 — Dec 2023",
+        },
         tools: ["Power Query", "Excel", "VBA"],
         description: [
           "Established a Power Query database for feeder schedules.",
@@ -176,5 +206,5 @@ export const experiences = [
 ]
 
 export const sortedExperiences = [...experiences].sort(
-  (first, second) => new Date(second.date) - new Date(first.date),
+  (first, second) => new Date(second.sortDate) - new Date(first.sortDate),
 )
