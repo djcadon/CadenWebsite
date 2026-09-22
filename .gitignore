@@ -11,6 +11,19 @@ node_modules
 dist
 dist-ssr
 *.local
+.vite/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Test and coverage output
+coverage/
+
+# TypeScript and lint caches
+*.tsbuildinfo
+.eslintcache
 
 # Editor directories and files
 .vscode/*

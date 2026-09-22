@@ -2,25 +2,28 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #101010;
-  --color-text: #dedbd3;
-  --color-muted: #88877f;
-  --color-line: #33332f;
-  --color-accent: #f1bd78;
-  --font-sans: "Space Grotesk", sans-serif;
-  --font-mono: "DM Mono", monospace;
+    --color-bg: #101010;
+    --color-text: #dedbd3;
+    --color-muted: #88877f;
+    --color-line: #33332f;
+    --color-accent: #f1bd78;
+    --font-sans: "Space Grotesk", sans-serif;
+    --font-mono: "DM Mono", monospace;
 }
 
 html,
 body,
 #root {
-  min-width: 320px;
-  min-height: 100%;
-  margin: 0;
+    min-width: 320px;
+    min-height: 100%;
+    margin: 0;
+}
+html {
+    scrollbar-gutter: stable;
 }
 body {
-  background: var(--color-bg);
+    background: var(--color-bg);
 }
 button {
-  font: inherit;
+    font: inherit;
 }
