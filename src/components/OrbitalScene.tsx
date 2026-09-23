@@ -35,6 +35,36 @@ const MOBILE_BREAKPOINT = 640;
 const MOBILE_CAMERA_FOV = 46;
 const MOBILE_SYSTEM_SCALE = 0.82;
 const MOBILE_PIXEL_RATIO = 1.25;
+const PLANET_POSITION_STORAGE_KEY = "caden-orbital-planet-positions";
+
+function readSavedPlanetAngles(): Partial<Record<DestinationId, number>> {
+    const savedPositions = sessionStorage.getItem(PLANET_POSITION_STORAGE_KEY);
+    if (!savedPositions) {
+        return {};
+    }
+
+    try {
+        const parsedPositions: unknown = JSON.parse(savedPositions);
+        if (!parsedPositions || typeof parsedPositions !== "object") {
+            return {};
+        }
+
+        return Object.fromEntries(
+            destinations
+                .filter((destination) => {
+                    const angle = (parsedPositions as Record<string, unknown>)[destination.id];
+                    return typeof angle === "number" && Number.isFinite(angle);
+                })
+                .map((destination) => [
+                    destination.id,
+                    (parsedPositions as Record<string, number>)[destination.id],
+                ]),
+        );
+    } catch (error: unknown) {
+        console.warn("Unable to restore saved orbital positions.", error);
+        return {};
+    }
+}
 
 function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalSceneProps) {
     // The Three.js canvas is mounted into this container after the component renders.
@@ -64,6 +94,7 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         const isLowPower = navigator.hardwareConcurrency <= 4;
         const pixelRatioLimit = isMobile || isLowPower ? MOBILE_PIXEL_RATIO : MAX_PIXEL_RATIO;
         const sceneScale = isMobile ? MOBILE_SYSTEM_SCALE : 1;
+        const savedPlanetAngles = readSavedPlanetAngles();
         // Create the scene and camera used by the orbital visualization.
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(
@@ -193,7 +224,7 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
 
         // The sun is composed of a lit core and a transparent outer halo.
         const sun = new THREE.Mesh(
-            new THREE.SphereGeometry(1.1, isMobile ? 32 : 48, isMobile ? 32 : 48),
+            new THREE.SphereGeometry(1.5, isMobile ? 32 : 48, isMobile ? 32 : 48),
             new THREE.MeshStandardMaterial({
                 color: 0xe8a95e,
                 emissive: 0x9d4c1c,
@@ -204,7 +235,7 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         system.add(sun);
 
         const sunHalo = new THREE.Mesh(
-            new THREE.SphereGeometry(1.42, isMobile ? 24 : 32, isMobile ? 24 : 32),
+            new THREE.SphereGeometry(1.75, isMobile ? 24 : 32, isMobile ? 24 : 32),
             new THREE.MeshBasicMaterial({
                 color: 0xf1bd78,
                 transparent: true,
@@ -269,7 +300,7 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             return {
                 mesh,
                 hitbox,
-                angle: index * 1.55,
+                angle: savedPlanetAngles[destination.id] ?? index * 1.55,
                 distance: destination.distance,
                 speed: destination.speed,
             };
@@ -455,6 +486,17 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         return () => {
             // Stop the loop and detach listeners before releasing WebGL resources.
             isDisposed = true;
+            sessionStorage.setItem(
+                PLANET_POSITION_STORAGE_KEY,
+                JSON.stringify(
+                    Object.fromEntries(
+                        planets.map(({ mesh, angle, speed }) => [
+                            mesh.userData.id,
+                            angle + elapsed * speed,
+                        ]),
+                    ),
+                ),
+            );
             if (frame !== undefined) {
                 cancelAnimationFrame(frame);
             }
