@@ -52,12 +52,9 @@ function App() {
                     <button
                         className="mt-12 cursor-pointer border-0 bg-transparent p-0 font-mono text-[11px] uppercase text-muted hover:text-accent"
                         type="button"
-                        onClick={() =>
-                            navigate(page === "archive" ? "work" : "home")
-                        }
+                        onClick={() => navigate(page === "archive" ? "work" : "home")}
                     >
-                        ←{" "}
-                        {page === "archive" ? "back to work" : "back to orbit"}
+                        ← {page === "archive" ? "back to work" : "back to orbit"}
                     </button>
                     <Page />
                 </>

@@ -31,15 +31,7 @@ export const experiences: Experience[] = [
                     end: "2026-08-01",
                     label: "May 2026 — Aug 2026",
                 },
-                tools: [
-                    "Python",
-                    "RAG",
-                    "AI",
-                    "Ollama",
-                    "Chainlit",
-                    "OpenAI API",
-                    "Gemini API",
-                ],
+                tools: ["Python", "RAG", "AI", "Ollama", "Chainlit", "OpenAI API", "Gemini API"],
                 description: [
                     "Developed a local RAG AI assistant using company manuals and videos.",
                     "Enabled natural-language generation of press brake programs for operators.",
@@ -74,12 +66,7 @@ export const experiences: Experience[] = [
                     end: null,
                     label: "Jan 2026 — Present",
                 },
-                tools: [
-                    "Software-defined radio",
-                    "Yagi antenna",
-                    "SQL",
-                    "FastAPI",
-                ],
+                tools: ["Software-defined radio", "Yagi antenna", "SQL", "FastAPI"],
                 description: [
                     "Lead the HabSat-1 ground station team at CAS in collaboration with UCARC.",
                     "Supported Yagi antenna and software-defined radio integration.",
@@ -167,13 +154,7 @@ export const experiences: Experience[] = [
                     end: "2024-01-01",
                     label: "MakeUC 2024",
                 },
-                tools: [
-                    "Python",
-                    "Flask",
-                    "JavaScript",
-                    "Tailwind CSS",
-                    "G-code",
-                ],
+                tools: ["Python", "Flask", "JavaScript", "Tailwind CSS", "G-code"],
                 description: [
                     "Engineered a G-code parsing and conversion system.",
                     "Generated .obj 3D models and .gif animated previews.",
@@ -194,15 +175,7 @@ export const experiences: Experience[] = [
                     end: "2025-11-01",
                     label: "NASA Hackathon 2025",
                 },
-                tools: [
-                    "FastAPI",
-                    "Python",
-                    "Supabase",
-                    "FAISS",
-                    "LLaMA 2",
-                    "Ollama",
-                    "React",
-                ],
+                tools: ["FastAPI", "Python", "Supabase", "FAISS", "LLaMA 2", "Ollama", "React"],
                 description: [
                     "Built a retrieval-augmented generation API for NASA bioscience publications.",
                     "Ingested HTML and PDF publications, split them into overlapping chunks, and generated embeddings.",
@@ -236,7 +209,5 @@ export const experiences: Experience[] = [
 ];
 
 export const sortedExperiences = [...experiences].sort(
-    (first, second) =>
-        new Date(second.sortDate).getTime() -
-        new Date(first.sortDate).getTime(),
+    (first, second) => new Date(second.sortDate).getTime() - new Date(first.sortDate).getTime(),
 );

@@ -18,6 +18,14 @@ body,
     min-height: 100%;
     margin: 0;
 }
+:root {
+    --header-height: 70px;
+}
+@media (min-width: 640px) {
+    :root {
+        --header-height: 84px;
+    }
+}
 html {
     scrollbar-gutter: stable;
 }
@@ -26,4 +34,73 @@ body {
 }
 button {
     font: inherit;
+}
+
+@keyframes terminal-boot-line {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes terminal-boot-exit {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes terminal-cursor-blink {
+    0%,
+    45% {
+        opacity: 1;
+    }
+    46%,
+    100% {
+        opacity: 0;
+    }
+}
+
+.terminal-boot {
+    opacity: 1;
+}
+
+.terminal-boot-exiting {
+    animation: terminal-boot-exit 600ms ease forwards;
+}
+
+.terminal-boot-line {
+    margin: 0;
+}
+
+.terminal-character {
+    opacity: 0;
+    animation: terminal-boot-line 260ms ease forwards;
+}
+
+.terminal-character-visible {
+    opacity: 1;
+    animation: none;
+}
+
+.terminal-cursor {
+    animation: terminal-cursor-blink 900ms steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .terminal-boot,
+    .terminal-boot-line,
+    .terminal-character,
+    .terminal-cursor {
+        animation: none;
+    }
+    .terminal-character {
+        opacity: 1;
+    }
 }

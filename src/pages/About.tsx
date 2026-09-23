@@ -10,15 +10,13 @@ function About() {
                 <span className="text-[#d7b98e]">behind the work.</span>
             </h1>
             <p className="mb-7 max-w-[620px] text-[21px] leading-relaxed text-text">
-                I'm Caden O'Leary, a Computer Science student at the University
-                of Cincinnati focused on building practical software and solving
-                technical problems.
+                I'm Caden O'Leary, a Computer Science student at the University of Cincinnati
+                focused on building practical software and solving technical problems.
             </p>
             <p className="max-w-[620px] leading-7 text-muted">
-                I'm pursuing a Bachelor of Science in Computer Science with a
-                minor in Information Technology and a Cyber Operations
-                certification. I bring experience across software development,
-                data systems, technical support, and hardware and network
+                I'm pursuing a Bachelor of Science in Computer Science with a minor in Information
+                Technology and a Cyber Operations certification. I bring experience across software
+                development, data systems, technical support, and hardware and network
                 troubleshooting.
             </p>
             <div className="mt-14 grid max-w-[720px] gap-8 border-t border-line pt-8 sm:grid-cols-2">

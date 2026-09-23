@@ -9,11 +9,6 @@ function Header() {
             description: "The person behind the work.",
         },
         {
-            id: "home",
-            label: "home",
-            description: "Return to the orbital system.",
-        },
-        {
             id: "work",
             label: "work",
             description: "Software, data, and engineering projects.",
@@ -31,8 +26,7 @@ function Header() {
     ];
 
     useEffect(() => {
-        const handleNavigation = () =>
-            setPage(window.location.hash.slice(1) || "home");
+        const handleNavigation = () => setPage(window.location.hash.slice(1) || "home");
         window.addEventListener("popstate", handleNavigation);
         window.addEventListener("hashchange", handleNavigation);
         return () => {
@@ -45,16 +39,27 @@ function Header() {
         <header className="flex h-[70px] flex-none items-center border-b border-line font-mono text-[11px] uppercase tracking-[.08em] sm:h-[84px]">
             <div aria-label="Current location" className="text-text">
                 <span className="text-[25px] tracking-[-.1em]">
-                    C<span className="text-accent">:/</span>Users/Caden/
+                    C<span className="text-accent">:/</span>Users/
+                    <a
+                        aria-label="Return to home directory"
+                        className="text-accent no-underline transition-colors hover:text-text"
+                        href="/"
+                        onClick={(event) => {
+                            if (window.location.pathname === "/" && !window.location.hash) {
+                                event.preventDefault();
+                            }
+                        }}
+                        title="Return to orbital system"
+                    >
+                        Caden
+                    </a>
+                    /
                 </span>
-                <span className="text-muted">
+                <span className="text-[25px] tracking-[-.1em] text-text">
                     {page === "home" ? "" : page}
                 </span>
             </div>
-            <nav
-                className="ml-auto flex gap-3 sm:gap-6"
-                aria-label="Main navigation"
-            >
+            <nav className="ml-auto flex gap-3 sm:gap-6" aria-label="Main navigation">
                 {navigation.map(({ id, label, description }) => (
                     <a
                         aria-label={`${label}: ${description}`}

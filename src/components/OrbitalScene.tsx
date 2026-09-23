@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { ThreePerf } from "three-perf";
 import { destinations } from "../constants/destinations";
 
 interface OrbitalSceneProps {
@@ -43,12 +44,28 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
             antialias: true,
             alpha: true,
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         mount.appendChild(renderer.domElement);
+        const performanceMonitor = import.meta.env.DEV
+            ? new ThreePerf({
+                  anchorX: "left",
+                  anchorY: "top",
+                  domElement: mount,
+                  renderer,
+                  memory: true,
+                  showGraph: true,
+              })
+            : null;
+        if (performanceMonitor) {
+            const performancePanel = document.getElementById("three-perf-ui");
+            if (performancePanel) {
+                performancePanel.style.top = "var(--header-height)";
+                performancePanel.style.bottom = "auto";
+            }
+        }
 
-        // Ambient light fills the scene while the point light gives the sun and
-        // planets their highlights.
+        // Ambient light fills the scene while the point light gives the sun and planets their highlights.
         scene.add(new THREE.AmbientLight(0x9da6b5, 0.42));
         const sunLight = new THREE.PointLight(0xffd39b, 32, 35, 2);
         scene.add(sunLight);
@@ -107,14 +124,8 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
                 starColors[position + 1] = brightness * 0.98;
                 starColors[position + 2] = brightness * 0.9;
             }
-            starGeometry.setAttribute(
-                "position",
-                new THREE.BufferAttribute(starPositions, 3),
-            );
-            starGeometry.setAttribute(
-                "color",
-                new THREE.BufferAttribute(starColors, 3),
-            );
+            starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+            starGeometry.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
             scene.add(
                 new THREE.Points(
                     starGeometry,
@@ -155,8 +166,7 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         system.add(sunHalo);
 
         // Each destination gets an orbit ring and a separate planet frame. Keeping
-        // them in separate branches ensures animating a planet cannot transform
-        // its orbit.
+        // them in separate branches ensures animating a planet cannot transform its orbit.
         const planets: Planet[] = destinations.map((destination, index) => {
             const orbitFrame = new THREE.Group();
             orbitFrame.rotation.x = (index - 1.5) * 0.08;
@@ -203,17 +213,27 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
                 speed: destination.speed,
             };
         });
+        const planetMeshes = planets.map(({ mesh }) => mesh);
 
         // Pointer coordinates are normalized for Three.js raycasting.
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
+        const projectedPosition = new THREE.Vector3();
+        const targetPosition = new THREE.Vector3();
+        const zoomDirection = new THREE.Vector3();
+        const endPosition = new THREE.Vector3();
         const updatePointer = (event: MouseEvent | PointerEvent) => {
             const bounds = renderer.domElement.getBoundingClientRect();
             pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
             pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
         };
         // Show only the description belonging to the currently hovered planet.
+        let hoveredId: string | undefined;
         const setHoveredLabel = (id?: string) => {
+            if (id === hoveredId) {
+                return;
+            }
+            hoveredId = id;
             destinations.forEach((destination) => {
                 descriptionRefs.current[destination.id]?.classList.toggle(
                     "opacity-100",
@@ -225,14 +245,11 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
                 );
             });
         };
-        // Raycast against planet meshes so orbit lines and the sun do not trigger
-        // hover or selection states.
+        // Raycast against planet meshes so orbit lines and the sun do not trigger hover or selection states.
         const handlePointerMove = (event: PointerEvent) => {
             updatePointer(event);
             raycaster.setFromCamera(pointer, camera);
-            const hovered = raycaster.intersectObjects(
-                planets.map(({ mesh }) => mesh),
-            )[0]?.object;
+            const hovered = raycaster.intersectObjects(planetMeshes)[0]?.object;
             renderer.domElement.style.cursor = hovered ? "pointer" : "default";
             setHoveredLabel(hovered?.userData.id);
         };
@@ -245,26 +262,20 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         const handleClick = (event: MouseEvent) => {
             updatePointer(event);
             raycaster.setFromCamera(pointer, camera);
-            const selected = raycaster.intersectObjects(
-                planets.map(({ mesh }) => mesh),
-            )[0]?.object as THREE.Mesh | undefined;
+            const selected = raycaster.intersectObjects(planetMeshes)[0]?.object as
+                THREE.Mesh | undefined;
             if (selected && !zoomTarget) {
                 zoomTarget = selected;
-                zoomStartedAt = timer.getElapsed();
+                zoomStartedAt = elapsed;
                 zoomStartPosition = camera.position.clone();
-                zoomStartTarget = selected.getWorldPosition(
-                    new THREE.Vector3(),
-                );
+                zoomStartTarget = selected.getWorldPosition(new THREE.Vector3());
                 setIsZooming(true);
             }
         };
         const handlePointerLeave = () => setHoveredLabel();
         renderer.domElement.addEventListener("pointermove", handlePointerMove);
         renderer.domElement.addEventListener("click", handleClick);
-        renderer.domElement.addEventListener(
-            "pointerleave",
-            handlePointerLeave,
-        );
+        renderer.domElement.addEventListener("pointerleave", handlePointerLeave);
 
         // Keep the camera projection aligned with the responsive canvas size.
         const resize = () => {
@@ -277,13 +288,16 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         window.addEventListener("resize", resize);
         resize();
 
-        // THREE.Timer provides elapsed time for smooth, frame-rate-independent motion.
-        const timer = new THREE.Timer();
-        timer.connect(document);
+        // Accumulate a clamped frame delta so an occasional delayed frame does
+        // not make the planets visibly jump ahead in their orbits.
+        let previousTimestamp = performance.now();
+        let elapsed = 0;
         let frame: number | undefined;
         const animate = (timestamp: number) => {
-            timer.update(timestamp);
-            const elapsed = timer.getElapsed();
+            performanceMonitor?.begin();
+            const delta = Math.min((timestamp - previousTimestamp) / 1000, 0.05);
+            previousTimestamp = timestamp;
+            elapsed += delta;
             // Move each planet and project its 3D position into screen coordinates
             // so its HTML label follows it.
             planets.forEach(({ mesh, angle, distance, speed }) => {
@@ -293,13 +307,12 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
                     Math.sin(angle + elapsed * speed) * distance,
                 );
                 mesh.rotation.y = elapsed * speed;
-                const projected = mesh
-                    .getWorldPosition(new THREE.Vector3())
-                    .project(camera);
+                const projected = mesh.getWorldPosition(projectedPosition).project(camera);
                 const label = labelRefs.current[mesh.userData.id];
                 if (label) {
-                    label.style.left = `${(projected.x * 0.5 + 0.5) * 100}%`;
-                    label.style.top = `${(-projected.y * 0.5 + 0.5) * 100}%`;
+                    const x = (projected.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
+                    const y = (-projected.y * 0.5 + 0.5) * renderer.domElement.clientHeight;
+                    label.style.transform = `translate3d(${x}px, ${y}px, 0)`;
                 }
             });
             // Interpolate the camera toward the selected planet using cubic easing,
@@ -307,24 +320,13 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
             if (zoomTarget) {
                 const progress = Math.min((elapsed - zoomStartedAt) / 0.9, 1);
                 const easedProgress = 1 - (1 - progress) ** 3;
-                const targetPosition = zoomTarget.getWorldPosition(
-                    new THREE.Vector3(),
-                );
+                zoomTarget.getWorldPosition(targetPosition);
                 if (!zoomStartPosition || !zoomStartTarget) {
                     return;
                 }
-                const zoomDirection = zoomStartPosition
-                    .clone()
-                    .sub(zoomStartTarget)
-                    .normalize();
-                const endPosition = targetPosition
-                    .clone()
-                    .add(zoomDirection.multiplyScalar(1.35));
-                camera.position.lerpVectors(
-                    zoomStartPosition,
-                    endPosition,
-                    easedProgress,
-                );
+                zoomDirection.copy(zoomStartPosition).sub(zoomStartTarget).normalize();
+                endPosition.copy(targetPosition).add(zoomDirection.multiplyScalar(1.35));
+                camera.position.lerpVectors(zoomStartPosition, endPosition, easedProgress);
                 camera.lookAt(targetPosition);
                 if (progress === 1 && !zoomFinished) {
                     zoomFinished = true;
@@ -334,6 +336,7 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
             // Slowly rotate the sun while rendering the current frame.
             sun.rotation.y = elapsed * 0.1;
             renderer.render(scene, camera);
+            performanceMonitor?.end();
             frame = requestAnimationFrame(animate);
         };
         animate(performance.now());
@@ -345,17 +348,26 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
             }
             starTexture.dispose();
             window.removeEventListener("resize", resize);
-            renderer.domElement.removeEventListener(
-                "pointermove",
-                handlePointerMove,
-            );
+            renderer.domElement.removeEventListener("pointermove", handlePointerMove);
             renderer.domElement.removeEventListener("click", handleClick);
-            renderer.domElement.removeEventListener(
-                "pointerleave",
-                handlePointerLeave,
-            );
-            timer.dispose();
+            renderer.domElement.removeEventListener("pointerleave", handlePointerLeave);
+            scene.traverse((object) => {
+                if ("geometry" in object && object.geometry instanceof THREE.BufferGeometry) {
+                    object.geometry.dispose();
+                }
+                if ("material" in object && object.material) {
+                    const materials = Array.isArray(object.material)
+                        ? object.material
+                        : [object.material];
+                    materials.forEach((material) => {
+                        if (material instanceof THREE.Material) {
+                            material.dispose();
+                        }
+                    });
+                }
+            });
             renderer.dispose();
+            performanceMonitor?.dispose();
             mount.removeChild(renderer.domElement);
         };
     }, []);
@@ -388,8 +400,7 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
                             <span
                                 className="mt-1 block text-[10px] text-muted opacity-0 transition-opacity duration-200"
                                 ref={(element) => {
-                                    descriptionRefs.current[destination.id] =
-                                        element;
+                                    descriptionRefs.current[destination.id] = element;
                                 }}
                             >
                                 {destination.description}
