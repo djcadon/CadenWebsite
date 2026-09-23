@@ -15,6 +15,9 @@ function Home({ onSelect, onReturnComplete, returnFrom }: HomeProps) {
 
     return (
         <section className="relative h-[calc(100dvh-70px)] min-h-[460px] overflow-hidden sm:h-[calc(100dvh-84px)]">
+            {/* TODO: Lazy-load OrbitalScene so Three.js is split from the initial bundle. */}
+            {/* TODO: Render a lightweight fallback while the scene chunk is loading. */}
+            {/* TODO: Start loading the scene during boot, then reveal it with the boot exit. */}
             <OrbitalScene
                 onSelect={onSelect}
                 onReturnComplete={onReturnComplete}

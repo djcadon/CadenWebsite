@@ -24,9 +24,13 @@ function Work() {
                         className="grid gap-5 border-b border-line py-7 sm:grid-cols-[60px_1fr_1fr] sm:gap-8"
                         key={experience.company}
                     >
-                        <span className="font-mono text-xs text-muted sm:text-sm">0{index + 1}</span>
+                        <span className="font-mono text-xs text-muted sm:text-sm">
+                            0{index + 1}
+                        </span>
                         <div>
-                            <h2 className="m-0 text-lg font-normal sm:text-xl">{experience.company}</h2>
+                            <h2 className="m-0 text-lg font-normal sm:text-xl">
+                                {experience.company}
+                            </h2>
                             <p className="mt-2 font-mono text-xs uppercase tracking-[.08em] text-muted sm:text-sm">
                                 {experience.location}
                             </p>

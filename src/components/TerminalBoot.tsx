@@ -29,11 +29,12 @@ function TerminalLine({
     onComplete,
 }: TerminalLineProps) {
     let characterIndex = 0;
-    const [lineComplete, setLineComplete] = useState(isComplete);
+    const [lineComplete, setLineComplete] = useState(
+        isComplete || (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches),
+    );
 
     useEffect(() => {
         if (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            setLineComplete(true);
             onComplete();
         }
     }, [isActive, onComplete]);
@@ -83,9 +84,7 @@ function TerminalLine({
                     })}
                 </span>
             ))}
-            {cursor && (isComplete || lineComplete) && (
-                <span className="terminal-cursor">_</span>
-            )}
+            {cursor && (isComplete || lineComplete) && <span className="terminal-cursor">_</span>}
         </p>
     );
 }
@@ -156,10 +155,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             return;
         }
 
-        const exitTimer = window.setTimeout(
-            () => setIsExiting(true),
-            EXIT_FADE_DELAY_MS,
-        );
+        const exitTimer = window.setTimeout(() => setIsExiting(true), EXIT_FADE_DELAY_MS);
         const completeTimer = window.setTimeout(() => {
             setIsVisible(false);
             sessionStorage.setItem(BOOT_SESSION_KEY, "true");
