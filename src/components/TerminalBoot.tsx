@@ -5,9 +5,16 @@ interface TerminalBootProps {
 }
 
 const BOOT_SESSION_KEY = "caden-orbital-boot-seen";
+const CHARACTER_DELAY_MS = 55;
+const EXIT_FADE_DELAY_MS = 1200;
+const BOOT_COMPLETE_DELAY_MS = 1800;
 
 interface TerminalLineProps {
-    segments: Array<{ text: string; className?: string }>;
+    segments: Array<{
+        text: string;
+        className?: string;
+        revealAfterComplete?: boolean;
+    }>;
     cursor?: boolean;
     isActive: boolean;
     isComplete: boolean;
@@ -22,9 +29,11 @@ function TerminalLine({
     onComplete,
 }: TerminalLineProps) {
     let characterIndex = 0;
+    const [lineComplete, setLineComplete] = useState(isComplete);
 
     useEffect(() => {
         if (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            setLineComplete(true);
             onComplete();
         }
     }, [isActive, onComplete]);
@@ -37,12 +46,16 @@ function TerminalLine({
         <p className="terminal-boot-line">
             {segments.map((segment) => (
                 <span className={segment.className} key={segment.text}>
-                    {Array.from(segment.text).map((character) => {
+                    {Array.from(
+                        segment.revealAfterComplete && !lineComplete
+                            ? segment.text.replace(/[^\s]/g, " ")
+                            : segment.text,
+                    ).map((character) => {
                         const index = characterIndex;
                         characterIndex += 1;
                         return (
                             <span
-                                className={`terminal-character ${isComplete ? "terminal-character-visible" : ""}`}
+                                className={`terminal-character ${isComplete || lineComplete ? "terminal-character-visible" : ""}`}
                                 key={`${segment.text}-${index}`}
                                 onAnimationEnd={
                                     isActive &&
@@ -52,12 +65,15 @@ function TerminalLine({
                                             0,
                                         ) -
                                             1
-                                        ? onComplete
+                                        ? () => {
+                                              setLineComplete(true);
+                                              onComplete();
+                                          }
                                         : undefined
                                 }
                                 style={
                                     {
-                                        animationDelay: `${index * 35}ms`,
+                                        animationDelay: `${index * CHARACTER_DELAY_MS}ms`,
                                     } as CSSProperties
                                 }
                             >
@@ -67,12 +83,16 @@ function TerminalLine({
                     })}
                 </span>
             ))}
-            {cursor && <span className="terminal-cursor">_</span>}
+            {cursor && (isComplete || lineComplete) && (
+                <span className="terminal-cursor">_</span>
+            )}
         </p>
     );
 }
 
 function shouldShowBoot(): boolean {
+    // Keep the intro atmospheric on first visit without replaying it on every
+    // navigation within the same browser session.
     return sessionStorage.getItem(BOOT_SESSION_KEY) !== "true";
 }
 
@@ -80,6 +100,8 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
     const [isVisible, setIsVisible] = useState(shouldShowBoot);
     const [isExiting, setIsExiting] = useState(false);
     const [activeLine, setActiveLine] = useState(0);
+    // The next line is activated by the previous line's final character rather
+    // than fixed timers, so text speed changes cannot desynchronize the sequence.
     const lines = [
         {
             segments: [
@@ -90,19 +112,31 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
         },
         {
             segments: [
-                { text: "[ok]", className: "text-[#a8c58c]" },
+                {
+                    text: "[ok]",
+                    className: "text-[#a8c58c]",
+                    revealAfterComplete: true,
+                },
                 { text: " initializing orbital workspace..." },
             ],
         },
         {
             segments: [
-                { text: "[ok]", className: "text-[#a8c58c]" },
+                {
+                    text: "[ok]",
+                    className: "text-[#a8c58c]",
+                    revealAfterComplete: true,
+                },
                 { text: " loading navigation system..." },
             ],
         },
         {
             segments: [
-                { text: "[ok]", className: "text-[#a8c58c]" },
+                {
+                    text: "[ok]",
+                    className: "text-[#a8c58c]",
+                    revealAfterComplete: true,
+                },
                 { text: " establishing visual link..." },
             ],
         },
@@ -122,11 +156,14 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             return;
         }
 
-        const exitTimer = window.setTimeout(() => setIsExiting(true), 700);
+        const exitTimer = window.setTimeout(
+            () => setIsExiting(true),
+            EXIT_FADE_DELAY_MS,
+        );
         const completeTimer = window.setTimeout(() => {
             setIsVisible(false);
             sessionStorage.setItem(BOOT_SESSION_KEY, "true");
-        }, 1300);
+        }, BOOT_COMPLETE_DELAY_MS);
 
         return () => {
             window.clearTimeout(exitTimer);

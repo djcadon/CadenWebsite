@@ -13,6 +13,7 @@ export interface ExperienceRole {
 export interface Experience {
     company: string;
     location: string;
+    // Used to keep the most recent experience at the top of Work and Archive.
     sortDate: string;
     roles: ExperienceRole[];
 }

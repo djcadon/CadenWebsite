@@ -1,4 +1,6 @@
 export const destinations = [
+    // distance controls orbit radius, size controls planet scale, and speed
+    // controls angular movement in the orbital scene.
     {
         id: "about",
         label: "About",

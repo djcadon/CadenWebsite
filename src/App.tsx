@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import Home from "./pages/Home";
 import Skills from "./pages/Skills";
 import Work from "./pages/Work";
+import type { DestinationId } from "./constants/destinations";
 
 const pages = {
     about: About,
@@ -18,7 +19,11 @@ const pages = {
 type PageId = keyof typeof pages;
 
 function App() {
+    // The hash provides lightweight page routing while keeping the orbital
+    // navigation shareable and compatible with static hosting.
     const [page, setPage] = useState(window.location.hash.slice(1));
+    // Preserve the page's planet so returning home can animate from that orbit.
+    const [returnFrom, setReturnFrom] = useState<DestinationId | undefined>();
     const Page = pages[page as PageId];
 
     useEffect(() => {
@@ -36,6 +41,11 @@ function App() {
             if (window.location.pathname === "/" && !window.location.hash) {
                 return;
             }
+            // Archive is reached from Work, so it returns through Work's planet.
+            const destinationPage = page === "archive" ? "work" : page;
+            if (destinationPage in pages) {
+                setReturnFrom(destinationPage as DestinationId);
+            }
             window.history.pushState({}, "", "/");
             setPage("");
             window.dispatchEvent(new PopStateEvent("popstate"));
@@ -44,9 +54,11 @@ function App() {
         window.location.hash = destination;
     };
 
+    const handleReturnComplete = () => setReturnFrom(undefined);
+
     return (
         <main className="mx-auto min-h-dvh w-full max-w-[1440px] overflow-hidden bg-[radial-gradient(circle_at_50%_47%,#191816_0,var(--color-bg)_42rem)] px-5 text-text sm:px-11">
-            <Header />
+            <Header onHome={() => navigate("home")} />
             {Page ? (
                 <>
                     <button
@@ -59,7 +71,11 @@ function App() {
                     <Page />
                 </>
             ) : (
-                <Home onSelect={navigate} />
+                <Home
+                    onSelect={navigate}
+                    onReturnComplete={handleReturnComplete}
+                    returnFrom={returnFrom}
+                />
             )}
         </main>
     );

@@ -1,20 +1,41 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { ThreePerf } from "three-perf";
-import { destinations } from "../constants/destinations";
+import { destinations, type DestinationId } from "../constants/destinations";
 
 interface OrbitalSceneProps {
     onSelect: (destination: string) => void;
+    onReturnComplete: () => void;
+    returnFrom?: DestinationId;
 }
 
 type Planet = {
     mesh: THREE.Mesh;
+    hitbox: THREE.Mesh;
     angle: number;
     distance: number;
     speed: number;
 };
 
-function OrbitalScene({ onSelect }: OrbitalSceneProps) {
+const CAMERA_FOV = 42;
+const CAMERA_NEAR_CLIP = 0.1;
+const CAMERA_FAR_CLIP = 100;
+const MAX_PIXEL_RATIO = 1.5;
+const SYSTEM_TILT = 0.15;
+const STAR_TEXTURE_SIZE = 64;
+const STAR_TEXTURE_CENTER = STAR_TEXTURE_SIZE / 2;
+const ORBIT_POINT_COUNT = 128;
+const MAX_FRAME_DELTA_SECONDS = 0.05;
+const PLANET_ZOOM_DISTANCE = 1.35;
+const PLANET_ZOOM_DURATION_SECONDS = 0.9;
+const RETURN_ZOOM_DURATION_SECONDS = 1.6;
+const SUN_ROTATION_SPEED = 0.1;
+
+function OrbitalScene({
+    onSelect,
+    onReturnComplete,
+    returnFrom,
+}: OrbitalSceneProps) {
     // The Three.js canvas is mounted into this container after the component renders.
     const mountRef = useRef<HTMLDivElement>(null);
     // These refs let the animation loop position HTML labels over their planets.
@@ -23,10 +44,14 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
     const [isZooming, setIsZooming] = useState(false);
     // Keep the latest callback available to the one-time Three.js effect.
     const onSelectRef = useRef<(destination: string) => void>(onSelect);
+    const onReturnCompleteRef = useRef(onReturnComplete);
 
     useEffect(() => {
         onSelectRef.current = onSelect;
     }, [onSelect]);
+    useEffect(() => {
+        onReturnCompleteRef.current = onReturnComplete;
+    }, [onReturnComplete]);
 
     useEffect(() => {
         const mount = mountRef.current;
@@ -35,16 +60,22 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         }
         // Create the scene and camera used by the orbital visualization.
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+        const camera = new THREE.PerspectiveCamera(
+            CAMERA_FOV,
+            1,
+            CAMERA_NEAR_CLIP,
+            CAMERA_FAR_CLIP,
+        );
         camera.position.set(0, 22, 18);
         camera.lookAt(0, 0, 0);
+        const overviewPosition = new THREE.Vector3(0, 22, 18);
 
         // Render with transparency so the surrounding page background remains visible.
         const renderer = new THREE.WebGLRenderer({
             antialias: true,
             alpha: true,
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         mount.appendChild(renderer.domElement);
         const performanceMonitor = import.meta.env.DEV
@@ -72,7 +103,7 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
 
         // The system group lets the whole solar system share a slight tilt.
         const system = new THREE.Group();
-        system.rotation.x = 0.15;
+        system.rotation.x = SYSTEM_TILT;
         scene.add(system);
 
         // Several point-cloud layers create stars with varied brightness and size.
@@ -84,13 +115,13 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         // Use a shared six-point star texture so every point renders as a filled
         // star shape rather than a round dot.
         const starCanvas = document.createElement("canvas");
-        starCanvas.width = 64;
-        starCanvas.height = 64;
+        starCanvas.width = STAR_TEXTURE_SIZE;
+        starCanvas.height = STAR_TEXTURE_SIZE;
         const starContext = starCanvas.getContext("2d");
         if (!starContext) {
             throw new Error("Unable to create the star texture.");
         }
-        starContext.translate(32, 32);
+        starContext.translate(STAR_TEXTURE_CENTER, STAR_TEXTURE_CENTER);
         starContext.beginPath();
         for (let point = 0; point < 12; point += 1) {
             const angle = -Math.PI / 2 + (point * Math.PI) / 6;
@@ -176,8 +207,8 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
             // Build a circle from line segments so its size follows the destination.
             const orbit = new THREE.LineLoop(
                 new THREE.BufferGeometry().setFromPoints(
-                    Array.from({ length: 128 }, (_, point) => {
-                        const angle = (point / 128) * Math.PI * 2;
+                    Array.from({ length: ORBIT_POINT_COUNT }, (_, point) => {
+                        const angle = (point / ORBIT_POINT_COUNT) * Math.PI * 2;
                         return new THREE.Vector3(
                             Math.cos(angle) * destination.distance,
                             0,
@@ -206,14 +237,54 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
             );
             mesh.userData = { id: destination.id };
             planetFrame.add(mesh);
+            const hitbox = new THREE.Mesh(
+                new THREE.SphereGeometry(destination.size * 2, 16, 16),
+                new THREE.MeshBasicMaterial({
+                    transparent: true,
+                    opacity: 0,
+                    depthWrite: false,
+                }),
+            );
+            hitbox.userData = { id: destination.id };
+            planetFrame.add(hitbox);
             return {
                 mesh,
+                hitbox,
                 angle: index * 1.55,
                 distance: destination.distance,
                 speed: destination.speed,
             };
         });
-        const planetMeshes = planets.map(({ mesh }) => mesh);
+        const planetHitboxes = planets.map(({ hitbox }) => hitbox);
+        let returning = false;
+        let returnStartedAt = 0;
+        let returnStartPosition: THREE.Vector3 | null = null;
+        let returningMesh: THREE.Mesh | null = null;
+        const returnTargetPosition = new THREE.Vector3(0, 0, 0);
+        const overviewTarget = new THREE.Vector3(0, 0, 0);
+        const returningPlanet = planets.find(
+            ({ mesh }) => mesh.userData.id === returnFrom,
+        );
+        if (returningPlanet) {
+            const { mesh, angle, distance } = returningPlanet;
+            returningMesh = mesh;
+            mesh.position.set(
+                Math.cos(angle) * distance,
+                0,
+                Math.sin(angle) * distance,
+            );
+            const planetPosition = mesh.getWorldPosition(new THREE.Vector3());
+            const returnDirection = overviewPosition
+                .clone()
+                .sub(planetPosition)
+                .normalize();
+            returnStartPosition = planetPosition
+                .clone()
+                .add(returnDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
+            camera.position.copy(returnStartPosition);
+            camera.lookAt(planetPosition);
+            returning = true;
+        }
 
         // Pointer coordinates are normalized for Three.js raycasting.
         const raycaster = new THREE.Raycaster();
@@ -249,7 +320,7 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         const handlePointerMove = (event: PointerEvent) => {
             updatePointer(event);
             raycaster.setFromCamera(pointer, camera);
-            const hovered = raycaster.intersectObjects(planetMeshes)[0]?.object;
+            const hovered = raycaster.intersectObjects(planetHitboxes)[0]?.object;
             renderer.domElement.style.cursor = hovered ? "pointer" : "default";
             setHoveredLabel(hovered?.userData.id);
         };
@@ -262,7 +333,7 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         const handleClick = (event: MouseEvent) => {
             updatePointer(event);
             raycaster.setFromCamera(pointer, camera);
-            const selected = raycaster.intersectObjects(planetMeshes)[0]?.object as
+            const selected = raycaster.intersectObjects(planetHitboxes)[0]?.object as
                 THREE.Mesh | undefined;
             if (selected && !zoomTarget) {
                 zoomTarget = selected;
@@ -295,17 +366,46 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
         let frame: number | undefined;
         const animate = (timestamp: number) => {
             performanceMonitor?.begin();
-            const delta = Math.min((timestamp - previousTimestamp) / 1000, 0.05);
+            const delta = Math.min(
+                (timestamp - previousTimestamp) / 1000,
+                MAX_FRAME_DELTA_SECONDS,
+            );
             previousTimestamp = timestamp;
             elapsed += delta;
+            if (returning) {
+                const progress = Math.min(
+                    (elapsed - returnStartedAt) / RETURN_ZOOM_DURATION_SECONDS,
+                    1,
+                );
+                const easedProgress = 1 - (1 - progress) ** 3;
+                camera.position.lerpVectors(
+                    returnStartPosition as THREE.Vector3,
+                    overviewPosition,
+                    easedProgress,
+                );
+                if (returningMesh) {
+                    returningMesh.getWorldPosition(targetPosition);
+                    returnTargetPosition.lerpVectors(
+                        targetPosition,
+                        overviewTarget,
+                        easedProgress,
+                    );
+                }
+                camera.lookAt(returnTargetPosition);
+                if (progress === 1) {
+                    returning = false;
+                    onReturnCompleteRef.current();
+                }
+            }
             // Move each planet and project its 3D position into screen coordinates
             // so its HTML label follows it.
-            planets.forEach(({ mesh, angle, distance, speed }) => {
+            planets.forEach(({ mesh, hitbox, angle, distance, speed }) => {
                 mesh.position.set(
                     Math.cos(angle + elapsed * speed) * distance,
                     0,
                     Math.sin(angle + elapsed * speed) * distance,
                 );
+                hitbox.position.copy(mesh.position);
                 mesh.rotation.y = elapsed * speed;
                 const projected = mesh.getWorldPosition(projectedPosition).project(camera);
                 const label = labelRefs.current[mesh.userData.id];
@@ -318,14 +418,17 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
             // Interpolate the camera toward the selected planet using cubic easing,
             // then notify the parent once the transition has completed.
             if (zoomTarget) {
-                const progress = Math.min((elapsed - zoomStartedAt) / 0.9, 1);
+                const progress = Math.min(
+                    (elapsed - zoomStartedAt) / PLANET_ZOOM_DURATION_SECONDS,
+                    1,
+                );
                 const easedProgress = 1 - (1 - progress) ** 3;
                 zoomTarget.getWorldPosition(targetPosition);
                 if (!zoomStartPosition || !zoomStartTarget) {
                     return;
                 }
                 zoomDirection.copy(zoomStartPosition).sub(zoomStartTarget).normalize();
-                endPosition.copy(targetPosition).add(zoomDirection.multiplyScalar(1.35));
+                endPosition.copy(targetPosition)                .add(zoomDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
                 camera.position.lerpVectors(zoomStartPosition, endPosition, easedProgress);
                 camera.lookAt(targetPosition);
                 if (progress === 1 && !zoomFinished) {
@@ -334,7 +437,7 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
                 }
             }
             // Slowly rotate the sun while rendering the current frame.
-            sun.rotation.y = elapsed * 0.1;
+            sun.rotation.y = elapsed * SUN_ROTATION_SPEED;
             renderer.render(scene, camera);
             performanceMonitor?.end();
             frame = requestAnimationFrame(animate);
@@ -394,11 +497,11 @@ function OrbitalScene({ onSelect }: OrbitalSceneProps) {
                         }}
                     >
                         <div className="absolute left-1/2 top-6 -translate-x-1/2 whitespace-nowrap">
-                            <strong className="block text-[11px] uppercase tracking-[.14em] text-text">
+                            <strong className="block text-[15px] uppercase tracking-[.14em] text-text">
                                 {destination.label}
                             </strong>
                             <span
-                                className="mt-1 block text-[10px] text-muted opacity-0 transition-opacity duration-200"
+                                className="mt-1 block text-[12px] text-muted opacity-0 transition-opacity duration-200"
                                 ref={(element) => {
                                     descriptionRefs.current[destination.id] = element;
                                 }}

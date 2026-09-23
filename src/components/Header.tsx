@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-function Header() {
+interface HeaderProps {
+    onHome: () => void;
+}
+
+function Header({ onHome }: HeaderProps) {
     const [page, setPage] = useState(window.location.hash.slice(1) || "home");
     const navigation = [
         {
@@ -41,15 +45,16 @@ function Header() {
                 <span className="text-[25px] tracking-[-.1em]">
                     C<span className="text-accent">:/</span>Users/
                     <a
+                        // Treat the directory name like a terminal parent-directory
+                        // link while keeping navigation inside the React app.
                         aria-label="Return to home directory"
                         className="text-accent no-underline transition-colors hover:text-text"
                         href="/"
-                        onClick={(event) => {
-                            if (window.location.pathname === "/" && !window.location.hash) {
-                                event.preventDefault();
-                            }
-                        }}
                         title="Return to orbital system"
+                        onClick={(event) => {
+                            event.preventDefault();
+                            onHome();
+                        }}
                     >
                         Caden
                     </a>
