@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { ThreePerf } from "three-perf";
+import type { ThreePerf as ThreePerfInstance } from "three-perf";
 import { destinations, type DestinationId } from "../constants/destinations";
 
 interface OrbitalSceneProps {
@@ -17,7 +17,7 @@ type Planet = {
     speed: number;
 };
 
-const CAMERA_FOV = 42;
+const CAMERA_FOV = 40;
 const CAMERA_NEAR_CLIP = 0.1;
 const CAMERA_FAR_CLIP = 100;
 const MAX_PIXEL_RATIO = 1.5;
@@ -27,15 +27,16 @@ const STAR_TEXTURE_CENTER = STAR_TEXTURE_SIZE / 2;
 const ORBIT_POINT_COUNT = 128;
 const MAX_FRAME_DELTA_SECONDS = 0.05;
 const PLANET_ZOOM_DISTANCE = 1.35;
-const PLANET_ZOOM_DURATION_SECONDS = 0.9;
-const RETURN_ZOOM_DURATION_SECONDS = 1.6;
+const PLANET_ZOOM_DURATION_SECONDS = 1;
+const RETURN_ZOOM_DURATION_SECONDS = 1.5;
 const SUN_ROTATION_SPEED = 0.1;
+const ORBIT_VERTICAL_OFFSET = -10;
+const MOBILE_BREAKPOINT = 640;
+const MOBILE_CAMERA_FOV = 46;
+const MOBILE_SYSTEM_SCALE = 0.82;
+const MOBILE_PIXEL_RATIO = 1.25;
 
-function OrbitalScene({
-    onSelect,
-    onReturnComplete,
-    returnFrom,
-}: OrbitalSceneProps) {
+function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalSceneProps) {
     // The Three.js canvas is mounted into this container after the component renders.
     const mountRef = useRef<HTMLDivElement>(null);
     // These refs let the animation loop position HTML labels over their planets.
@@ -45,6 +46,7 @@ function OrbitalScene({
     // Keep the latest callback available to the one-time Three.js effect.
     const onSelectRef = useRef<(destination: string) => void>(onSelect);
     const onReturnCompleteRef = useRef(onReturnComplete);
+    const returnFromRef = useRef(returnFrom);
 
     useEffect(() => {
         onSelectRef.current = onSelect;
@@ -58,42 +60,56 @@ function OrbitalScene({
         if (!mount) {
             return;
         }
+        const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+        const isLowPower = navigator.hardwareConcurrency <= 4;
+        const pixelRatioLimit = isMobile || isLowPower ? MOBILE_PIXEL_RATIO : MAX_PIXEL_RATIO;
+        const sceneScale = isMobile ? MOBILE_SYSTEM_SCALE : 1;
         // Create the scene and camera used by the orbital visualization.
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(
-            CAMERA_FOV,
+            isMobile ? MOBILE_CAMERA_FOV : CAMERA_FOV,
             1,
             CAMERA_NEAR_CLIP,
             CAMERA_FAR_CLIP,
         );
-        camera.position.set(0, 22, 18);
-        camera.lookAt(0, 0, 0);
-        const overviewPosition = new THREE.Vector3(0, 22, 18);
+        camera.position.set(0, isMobile ? 20 : 22, isMobile ? 21 : 18);
+        camera.lookAt(0, ORBIT_VERTICAL_OFFSET, 0);
+        const overviewPosition = new THREE.Vector3(0, isMobile ? 20 : 22, isMobile ? 21 : 18);
 
         // Render with transparency so the surrounding page background remains visible.
         const renderer = new THREE.WebGLRenderer({
             antialias: true,
             alpha: true,
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioLimit));
         renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.domElement.style.touchAction = "manipulation";
         mount.appendChild(renderer.domElement);
-        const performanceMonitor = import.meta.env.DEV
-            ? new ThreePerf({
-                  anchorX: "left",
-                  anchorY: "top",
-                  domElement: mount,
-                  renderer,
-                  memory: true,
-                  showGraph: true,
-              })
-            : null;
-        if (performanceMonitor) {
-            const performancePanel = document.getElementById("three-perf-ui");
-            if (performancePanel) {
-                performancePanel.style.top = "var(--header-height)";
-                performancePanel.style.bottom = "auto";
-            }
+        let performanceMonitor: ThreePerfInstance | null = null;
+        let isDisposed = false;
+        if (import.meta.env.DEV) {
+            import("three-perf")
+                .then(({ ThreePerf }) => {
+                    if (isDisposed) {
+                        return;
+                    }
+                    performanceMonitor = new ThreePerf({
+                        anchorX: "left",
+                        anchorY: "top",
+                        domElement: mount,
+                        renderer,
+                        memory: true,
+                        showGraph: true,
+                    });
+                    const performancePanel = document.getElementById("three-perf-ui");
+                    if (performancePanel) {
+                        performancePanel.style.top = "var(--header-height)";
+                        performancePanel.style.bottom = "auto";
+                    }
+                })
+                .catch((error: unknown) => {
+                    console.error("Unable to load the development performance monitor.", error);
+                });
         }
 
         // Ambient light fills the scene while the point light gives the sun and planets their highlights.
@@ -104,13 +120,15 @@ function OrbitalScene({
         // The system group lets the whole solar system share a slight tilt.
         const system = new THREE.Group();
         system.rotation.x = SYSTEM_TILT;
+        system.position.y = ORBIT_VERTICAL_OFFSET;
+        system.scale.setScalar(sceneScale);
         scene.add(system);
 
         // Several point-cloud layers create stars with varied brightness and size.
         const starGroups = [
-            { count: 900, size: 0.14 },
-            { count: 280, size: 0.24 },
-            { count: 45, size: 0.42 },
+            { count: isMobile || isLowPower ? 500 : 900, size: 0.14 },
+            { count: isMobile || isLowPower ? 140 : 280, size: 0.24 },
+            { count: isMobile || isLowPower ? 24 : 45, size: 0.42 },
         ];
         // Use a shared six-point star texture so every point renders as a filled
         // star shape rather than a round dot.
@@ -175,7 +193,7 @@ function OrbitalScene({
 
         // The sun is composed of a lit core and a transparent outer halo.
         const sun = new THREE.Mesh(
-            new THREE.SphereGeometry(1.1, 48, 48),
+            new THREE.SphereGeometry(1.1, isMobile ? 32 : 48, isMobile ? 32 : 48),
             new THREE.MeshStandardMaterial({
                 color: 0xe8a95e,
                 emissive: 0x9d4c1c,
@@ -186,7 +204,7 @@ function OrbitalScene({
         system.add(sun);
 
         const sunHalo = new THREE.Mesh(
-            new THREE.SphereGeometry(1.42, 32, 32),
+            new THREE.SphereGeometry(1.42, isMobile ? 24 : 32, isMobile ? 24 : 32),
             new THREE.MeshBasicMaterial({
                 color: 0xf1bd78,
                 transparent: true,
@@ -207,8 +225,9 @@ function OrbitalScene({
             // Build a circle from line segments so its size follows the destination.
             const orbit = new THREE.LineLoop(
                 new THREE.BufferGeometry().setFromPoints(
-                    Array.from({ length: ORBIT_POINT_COUNT }, (_, point) => {
-                        const angle = (point / ORBIT_POINT_COUNT) * Math.PI * 2;
+                    Array.from({ length: isMobile ? 96 : ORBIT_POINT_COUNT }, (_, point) => {
+                        const pointCount = isMobile ? 96 : ORBIT_POINT_COUNT;
+                        const angle = (point / pointCount) * Math.PI * 2;
                         return new THREE.Vector3(
                             Math.cos(angle) * destination.distance,
                             0,
@@ -228,7 +247,7 @@ function OrbitalScene({
             planetFrame.rotation.copy(orbitFrame.rotation);
             system.add(planetFrame);
             const mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(destination.size, 32, 32),
+                new THREE.SphereGeometry(destination.size, isMobile ? 20 : 32, isMobile ? 20 : 32),
                 new THREE.MeshStandardMaterial({
                     color: destination.color,
                     roughness: 0.72,
@@ -238,7 +257,7 @@ function OrbitalScene({
             mesh.userData = { id: destination.id };
             planetFrame.add(mesh);
             const hitbox = new THREE.Mesh(
-                new THREE.SphereGeometry(destination.size * 2, 16, 16),
+                new THREE.SphereGeometry(destination.size * 2, 12, 12),
                 new THREE.MeshBasicMaterial({
                     transparent: true,
                     opacity: 0,
@@ -257,27 +276,20 @@ function OrbitalScene({
         });
         const planetHitboxes = planets.map(({ hitbox }) => hitbox);
         let returning = false;
-        let returnStartedAt = 0;
+        const returnStartedAt = 0;
         let returnStartPosition: THREE.Vector3 | null = null;
         let returningMesh: THREE.Mesh | null = null;
-        const returnTargetPosition = new THREE.Vector3(0, 0, 0);
-        const overviewTarget = new THREE.Vector3(0, 0, 0);
+        const returnTargetPosition = new THREE.Vector3(0, ORBIT_VERTICAL_OFFSET, 0);
+        const overviewTarget = new THREE.Vector3(0, ORBIT_VERTICAL_OFFSET, 0);
         const returningPlanet = planets.find(
-            ({ mesh }) => mesh.userData.id === returnFrom,
+            ({ mesh }) => mesh.userData.id === returnFromRef.current,
         );
         if (returningPlanet) {
             const { mesh, angle, distance } = returningPlanet;
             returningMesh = mesh;
-            mesh.position.set(
-                Math.cos(angle) * distance,
-                0,
-                Math.sin(angle) * distance,
-            );
+            mesh.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
             const planetPosition = mesh.getWorldPosition(new THREE.Vector3());
-            const returnDirection = overviewPosition
-                .clone()
-                .sub(planetPosition)
-                .normalize();
+            const returnDirection = overviewPosition.clone().sub(planetPosition).normalize();
             returnStartPosition = planetPosition
                 .clone()
                 .add(returnDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
@@ -356,7 +368,8 @@ function OrbitalScene({
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
         };
-        window.addEventListener("resize", resize);
+        const resizeObserver = new ResizeObserver(resize);
+        resizeObserver.observe(mount);
         resize();
 
         // Accumulate a clamped frame delta so an occasional delayed frame does
@@ -366,10 +379,7 @@ function OrbitalScene({
         let frame: number | undefined;
         const animate = (timestamp: number) => {
             performanceMonitor?.begin();
-            const delta = Math.min(
-                (timestamp - previousTimestamp) / 1000,
-                MAX_FRAME_DELTA_SECONDS,
-            );
+            const delta = Math.min((timestamp - previousTimestamp) / 1000, MAX_FRAME_DELTA_SECONDS);
             previousTimestamp = timestamp;
             elapsed += delta;
             if (returning) {
@@ -385,11 +395,7 @@ function OrbitalScene({
                 );
                 if (returningMesh) {
                     returningMesh.getWorldPosition(targetPosition);
-                    returnTargetPosition.lerpVectors(
-                        targetPosition,
-                        overviewTarget,
-                        easedProgress,
-                    );
+                    returnTargetPosition.lerpVectors(targetPosition, overviewTarget, easedProgress);
                 }
                 camera.lookAt(returnTargetPosition);
                 if (progress === 1) {
@@ -428,7 +434,9 @@ function OrbitalScene({
                     return;
                 }
                 zoomDirection.copy(zoomStartPosition).sub(zoomStartTarget).normalize();
-                endPosition.copy(targetPosition)                .add(zoomDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
+                endPosition
+                    .copy(targetPosition)
+                    .add(zoomDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
                 camera.position.lerpVectors(zoomStartPosition, endPosition, easedProgress);
                 camera.lookAt(targetPosition);
                 if (progress === 1 && !zoomFinished) {
@@ -446,11 +454,12 @@ function OrbitalScene({
 
         return () => {
             // Stop the loop and detach listeners before releasing WebGL resources.
+            isDisposed = true;
             if (frame !== undefined) {
                 cancelAnimationFrame(frame);
             }
             starTexture.dispose();
-            window.removeEventListener("resize", resize);
+            resizeObserver.disconnect();
             renderer.domElement.removeEventListener("pointermove", handlePointerMove);
             renderer.domElement.removeEventListener("click", handleClick);
             renderer.domElement.removeEventListener("pointerleave", handlePointerLeave);
@@ -497,11 +506,11 @@ function OrbitalScene({
                         }}
                     >
                         <div className="absolute left-1/2 top-6 -translate-x-1/2 whitespace-nowrap">
-                            <strong className="block text-[15px] uppercase tracking-[.14em] text-text">
+                            <strong className="block text-sm uppercase tracking-[.14em] text-text sm:text-lg">
                                 {destination.label}
                             </strong>
                             <span
-                                className="mt-1 block text-[12px] text-muted opacity-0 transition-opacity duration-200"
+                                className="mt-1 block text-xs text-muted opacity-0 transition-opacity duration-200 sm:text-base"
                                 ref={(element) => {
                                     descriptionRefs.current[destination.id] = element;
                                 }}

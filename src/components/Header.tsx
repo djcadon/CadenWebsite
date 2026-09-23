@@ -40,9 +40,9 @@ function Header({ onHome }: HeaderProps) {
     }, []);
 
     return (
-        <header className="flex h-[70px] flex-none items-center border-b border-line font-mono text-[11px] uppercase tracking-[.08em] sm:h-[84px]">
+        <header className="flex h-[70px] min-w-0 flex-none items-center border-b border-line font-mono text-[9px] uppercase tracking-[.06em] sm:h-[84px] sm:text-sm">
             <div aria-label="Current location" className="text-text">
-                <span className="text-[25px] tracking-[-.1em]">
+                <span className="whitespace-nowrap text-sm tracking-[-.06em] sm:text-2xl">
                     C<span className="text-accent">:/</span>Users/
                     <a
                         // Treat the directory name like a terminal parent-directory
@@ -60,26 +60,17 @@ function Header({ onHome }: HeaderProps) {
                     </a>
                     /
                 </span>
-                <span className="text-[25px] tracking-[-.1em] text-text">
+                <span className="whitespace-nowrap text-sm tracking-[-.06em] text-text sm:text-2xl">
                     {page === "home" ? "" : page}
                 </span>
             </div>
-            <nav className="ml-auto flex gap-3 sm:gap-6" aria-label="Main navigation">
+            <nav className="ml-auto flex shrink-0 gap-2 sm:gap-6" aria-label="Main navigation">
                 {navigation.map(({ id, label, description }) => (
                     <a
                         aria-label={`${label}: ${description}`}
                         className="text-muted no-underline transition-colors hover:text-accent"
-                        href={id === "home" ? "/" : `#${id}`}
+                        href={`#${id}`}
                         key={id}
-                        onClick={(event) => {
-                            if (
-                                id === "home" &&
-                                window.location.pathname === "/" &&
-                                !window.location.hash
-                            ) {
-                                event.preventDefault();
-                            }
-                        }}
                         title={description}
                     >
                         {label}

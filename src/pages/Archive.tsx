@@ -7,7 +7,7 @@ function Archive() {
 
     return (
         <section className="relative -mx-5 min-h-[calc(100vh-230px)] bg-[radial-gradient(circle_at_80%_30%,#1b3442,transparent_38rem)] px-5 py-[10vh] sm:-mx-11 sm:px-11">
-            <p className="font-mono text-[11px] uppercase tracking-[.12em] text-muted">
+            <p className="font-mono text-xs uppercase tracking-[.12em] text-muted sm:text-sm">
                 02 / archive
             </p>
             <h1 className="my-6 max-w-[800px] text-[clamp(3.5rem,8vw,8rem)] font-normal leading-[.92] tracking-[-.08em] text-text">
@@ -15,7 +15,7 @@ function Archive() {
                 <br />
                 <span className="text-[#93b8d8]">the orbit.</span>
             </h1>
-            <p className="mb-7 max-w-[620px] text-[21px] leading-relaxed text-text">
+            <p className="mb-7 max-w-[620px] text-lg leading-relaxed text-text sm:text-xl">
                 Earlier work, projects, and leadership experience from across my technical path.
             </p>
             <div className="mt-16 max-w-[1100px] border-t border-line">
@@ -24,20 +24,24 @@ function Archive() {
                         className="grid gap-5 border-b border-line py-7 sm:grid-cols-[60px_1fr_1fr] sm:gap-8"
                         key={experience.company}
                     >
-                        <span className="font-mono text-[11px] text-muted">0{index + 1}</span>
+                        <span className="font-mono text-xs text-muted sm:text-sm">
+                            0{index + 1}
+                        </span>
                         <div>
-                            <h2 className="m-0 text-[22px] font-normal">{experience.company}</h2>
-                            <p className="mt-2 font-mono text-[10px] uppercase tracking-[.08em] text-muted">
+                            <h2 className="m-0 text-lg font-normal sm:text-xl">
+                                {experience.company}
+                            </h2>
+                            <p className="mt-2 font-mono text-xs uppercase tracking-[.08em] text-muted sm:text-sm">
                                 {experience.location}
                             </p>
                             {experience.roles
                                 .filter((role) => role.archive)
                                 .map((role) => (
                                     <div className="mt-5" key={role.title + role.period.label}>
-                                        <p className="font-mono text-[11px] text-[#93b8d8]">
+                                        <p className="font-mono text-xs text-[#93b8d8] sm:text-sm">
                                             {role.title}
                                         </p>
-                                        <p className="mt-1 font-mono text-[10px] uppercase tracking-[.08em] text-muted">
+                                        <p className="mt-1 font-mono text-xs uppercase tracking-[.08em] text-muted sm:text-sm">
                                             {role.period.label}
                                         </p>
                                         <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-6 text-muted">
@@ -49,10 +53,10 @@ function Archive() {
                                 ))}
                         </div>
                         <div>
-                            <p className="mb-3 font-mono text-[10px] uppercase tracking-[.1em] text-[#93b8d8]">
+                            <p className="mb-3 font-mono text-xs uppercase tracking-[.1em] text-[#93b8d8] sm:text-sm">
                                 Tools used
                             </p>
-                            <ul className="flex flex-wrap gap-2 p-0 font-mono text-[10px] text-muted">
+                            <ul className="flex flex-wrap gap-2 p-0 font-mono text-xs text-muted sm:text-sm">
                                 {[
                                     ...new Set(
                                         experience.roles

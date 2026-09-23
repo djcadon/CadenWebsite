@@ -1,7 +1,7 @@
 function About() {
     return (
         <section className="relative -mx-5 min-h-[calc(100vh-230px)] bg-[radial-gradient(circle_at_80%_30%,#553b2b,transparent_38rem)] px-5 py-[10vh] sm:-mx-11 sm:px-11">
-            <p className="font-mono text-[11px] uppercase tracking-[.12em] text-muted">
+            <p className="font-mono text-xs uppercase tracking-[.12em] text-muted sm:text-sm">
                 01 / about
             </p>
             <h1 className="my-6 max-w-[800px] text-[clamp(3.5rem,8vw,8rem)] font-normal leading-[.92] tracking-[-.08em] text-text">
@@ -9,7 +9,7 @@ function About() {
                 <br />
                 <span className="text-[#d7b98e]">behind the work.</span>
             </h1>
-            <p className="mb-7 max-w-[620px] text-[21px] leading-relaxed text-text">
+            <p className="mb-7 max-w-[620px] text-lg leading-relaxed text-text sm:text-xl">
                 I'm Caden O'Leary, a Computer Science student at the University of Cincinnati
                 focused on building practical software and solving technical problems.
             </p>
@@ -21,7 +21,7 @@ function About() {
             </p>
             <div className="mt-14 grid max-w-[720px] gap-8 border-t border-line pt-8 sm:grid-cols-2">
                 <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#d7b98e]">
+                    <p className="font-mono text-xs uppercase tracking-[.12em] text-[#d7b98e] sm:text-sm">
                         education
                     </p>
                     <p className="mt-3 text-text">University of Cincinnati</p>
@@ -32,7 +32,7 @@ function About() {
                     </p>
                 </div>
                 <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#d7b98e]">
+                    <p className="font-mono text-xs uppercase tracking-[.12em] text-[#d7b98e] sm:text-sm">
                         leadership
                     </p>
                     <p className="mt-3 text-text">UC CubeCats</p>
