@@ -6,8 +6,8 @@ interface TerminalBootProps {
 
 const BOOT_SESSION_KEY = "caden-orbital-boot-seen";
 const CHARACTER_DELAY_MS = 55;
-const EXIT_FADE_DELAY_MS = 1200;
-const BOOT_COMPLETE_DELAY_MS = 1800;
+const EXIT_FADE_DELAY_MS = 1500;
+const BOOT_COMPLETE_DELAY_MS = 2000;
 
 interface TerminalLineProps {
     segments: Array<{

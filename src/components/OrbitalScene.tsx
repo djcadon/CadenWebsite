@@ -17,7 +17,7 @@ type Planet = {
     speed: number;
 };
 
-const CAMERA_FOV = 42;
+const CAMERA_FOV = 40;
 const CAMERA_NEAR_CLIP = 0.1;
 const CAMERA_FAR_CLIP = 100;
 const MAX_PIXEL_RATIO = 1.5;
@@ -27,9 +27,10 @@ const STAR_TEXTURE_CENTER = STAR_TEXTURE_SIZE / 2;
 const ORBIT_POINT_COUNT = 128;
 const MAX_FRAME_DELTA_SECONDS = 0.05;
 const PLANET_ZOOM_DISTANCE = 1.35;
-const PLANET_ZOOM_DURATION_SECONDS = 0.9;
-const RETURN_ZOOM_DURATION_SECONDS = 1.6;
+const PLANET_ZOOM_DURATION_SECONDS = 1;
+const RETURN_ZOOM_DURATION_SECONDS = 1.5;
 const SUN_ROTATION_SPEED = 0.1;
+const ORBIT_VERTICAL_OFFSET = -10;
 
 function OrbitalScene({
     onSelect,
@@ -67,7 +68,7 @@ function OrbitalScene({
             CAMERA_FAR_CLIP,
         );
         camera.position.set(0, 22, 18);
-        camera.lookAt(0, 0, 0);
+        camera.lookAt(0, ORBIT_VERTICAL_OFFSET, 0);
         const overviewPosition = new THREE.Vector3(0, 22, 18);
 
         // Render with transparency so the surrounding page background remains visible.
@@ -104,6 +105,7 @@ function OrbitalScene({
         // The system group lets the whole solar system share a slight tilt.
         const system = new THREE.Group();
         system.rotation.x = SYSTEM_TILT;
+        system.position.y = ORBIT_VERTICAL_OFFSET;
         scene.add(system);
 
         // Several point-cloud layers create stars with varied brightness and size.
@@ -260,8 +262,16 @@ function OrbitalScene({
         let returnStartedAt = 0;
         let returnStartPosition: THREE.Vector3 | null = null;
         let returningMesh: THREE.Mesh | null = null;
-        const returnTargetPosition = new THREE.Vector3(0, 0, 0);
-        const overviewTarget = new THREE.Vector3(0, 0, 0);
+        const returnTargetPosition = new THREE.Vector3(
+            0,
+            ORBIT_VERTICAL_OFFSET,
+            0,
+        );
+        const overviewTarget = new THREE.Vector3(
+            0,
+            ORBIT_VERTICAL_OFFSET,
+            0,
+        );
         const returningPlanet = planets.find(
             ({ mesh }) => mesh.userData.id === returnFrom,
         );
@@ -497,11 +507,11 @@ function OrbitalScene({
                         }}
                     >
                         <div className="absolute left-1/2 top-6 -translate-x-1/2 whitespace-nowrap">
-                            <strong className="block text-[15px] uppercase tracking-[.14em] text-text">
+                            <strong className="block text-sm uppercase tracking-[.14em] text-text sm:text-lg">
                                 {destination.label}
                             </strong>
                             <span
-                                className="mt-1 block text-[12px] text-muted opacity-0 transition-opacity duration-200"
+                                className="mt-1 block text-xs text-muted opacity-0 transition-opacity duration-200 sm:text-base"
                                 ref={(element) => {
                                     descriptionRefs.current[destination.id] = element;
                                 }}

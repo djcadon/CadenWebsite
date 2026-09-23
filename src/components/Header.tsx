@@ -40,9 +40,9 @@ function Header({ onHome }: HeaderProps) {
     }, []);
 
     return (
-        <header className="flex h-[70px] flex-none items-center border-b border-line font-mono text-[11px] uppercase tracking-[.08em] sm:h-[84px]">
+        <header className="flex h-[70px] flex-none items-center border-b border-line font-mono text-xs uppercase tracking-[.08em] sm:h-[84px] sm:text-sm">
             <div aria-label="Current location" className="text-text">
-                <span className="text-[25px] tracking-[-.1em]">
+                <span className="text-xl tracking-[-.1em] sm:text-2xl">
                     C<span className="text-accent">:/</span>Users/
                     <a
                         // Treat the directory name like a terminal parent-directory
@@ -60,7 +60,7 @@ function Header({ onHome }: HeaderProps) {
                     </a>
                     /
                 </span>
-                <span className="text-[25px] tracking-[-.1em] text-text">
+                <span className="text-xl tracking-[-.1em] text-text sm:text-2xl">
                     {page === "home" ? "" : page}
                 </span>
             </div>
