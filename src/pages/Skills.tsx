@@ -1,14 +1,19 @@
-const skillGroups = [
-    ["Languages", "Python · C++ · C# · C · JavaScript · SQL · VBA"],
-    ["Software & APIs", "React · FastAPI · Flask · REST APIs · .NET · Docker · GitHub"],
-    ["Data & AI", "Database design · RAG · Local LLMs · OpenAI API · Google Gemini"],
-    [
-        "Systems & security",
-        "Linux · Windows · Operating systems · Cyber defense · Malware analysis",
+const skillGroups: Record<string, string[]> = {
+    Languages: ["Python", "C++", "C#", "C", "JavaScript", "TypeScript", "SQL", "VBA"],
+    "Frameworks & Libraries": ["React", "FastAPI", "Flask", ".NET", "REST APIs"],
+    "Tools & Infrastructure": ["Docker", "GitHub", "Linux", "Windows", "Operating systems"],
+    "AI & ML": ["RAG", "Local LLMs", "OpenAI API", "Google Gemini"],
+    Cybersecurity: ["Cyber defense", "Malware analysis"],
+    "Hardware & Manufacturing": [
+        "STM32",
+        "Raspberry Pi",
+        "CNC machines",
+        "HMI programming",
+        "Injection molding",
+        "Laser cutting",
     ],
-    ["Embedded & satellite", "STM32 · Raspberry Pi · Satellite systems · Ground systems · LabVIEW"],
-    ["Industrial technology", "CNC machines · HMI programming · Injection molding · Laser cutting"],
-];
+    "Space Systems": ["Satellite Systems", "Ground Systems"],
+};
 
 function Skills() {
     return (
@@ -26,12 +31,14 @@ function Skills() {
                 operating systems, and hands-on troubleshooting.
             </p>
             <div className="mt-16 grid max-w-[850px] gap-0 border-t border-line sm:grid-cols-2">
-                {skillGroups.map(([title, skills]) => (
+                {Object.entries(skillGroups).map(([title, skills]) => (
                     <div className="border-b border-line py-6 sm:mr-8" key={title}>
                         <p className="font-mono text-xs uppercase tracking-[.12em] text-[#a8c58c] sm:text-sm">
                             {title}
                         </p>
-                        <p className="mt-3 font-mono text-sm leading-7 text-text">{skills}</p>
+                        <p className="mt-3 font-mono text-sm leading-7 text-text">
+                            {skills.join(" · ")}
+                        </p>
                     </div>
                 ))}
             </div>

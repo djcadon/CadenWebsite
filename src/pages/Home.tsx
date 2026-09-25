@@ -1,7 +1,8 @@
-import { useState } from "react";
-import OrbitalScene from "../components/OrbitalScene";
+import { useState, lazy, Suspense } from "react";
 import TerminalBoot from "../components/TerminalBoot";
 import type { DestinationId } from "../constants/destinations";
+
+const OrbitalScene = lazy(() => import("../components/OrbitalScene"));
 
 interface HomeProps {
     onSelect: (destination: string) => void;
@@ -15,14 +16,19 @@ function Home({ onSelect, onReturnComplete, returnFrom }: HomeProps) {
 
     return (
         <section className="relative h-[calc(100dvh-70px)] min-h-0 overflow-hidden sm:h-[calc(100dvh-84px)]">
-            {/* TODO: Lazy-load OrbitalScene so Three.js is split from the initial bundle. */}
-            {/* TODO: Render a lightweight fallback while the scene chunk is loading. */}
-            {/* TODO: Start loading the scene during boot, then reveal it with the boot exit. */}
-            <OrbitalScene
-                onSelect={onSelect}
-                onReturnComplete={onReturnComplete}
-                returnFrom={returnFrom}
-            />
+            <Suspense fallback={
+                <div className="flex h-full w-full items-center justify-center">
+                    <span className="font-mono text-sm uppercase tracking-[.14em] text-muted">
+                        Loading Systems...
+                    </span>
+                </div>
+            }>
+                <OrbitalScene
+                    onSelect={onSelect}
+                    onReturnComplete={onReturnComplete}
+                    returnFrom={returnFrom}
+                />
+            </Suspense>
             {isBooting && <TerminalBoot onComplete={() => setIsBooting(false)} />}
         </section>
     );
