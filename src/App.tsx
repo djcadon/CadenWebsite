@@ -57,7 +57,7 @@ function App() {
     const handleReturnComplete = () => setReturnFrom(undefined);
 
     return (
-        <main className="mx-auto min-h-dvh w-full max-w-[1440px] overflow-hidden bg-[radial-gradient(circle_at_50%_47%,#191816_0,var(--color-bg)_42rem)] px-5 text-text sm:px-11">
+        <main className="mx-auto min-h-dvh w-full glow-home px-5 text-text sm:px-11">
             <Header onHome={() => navigate("home")} />
             {Page ? (
                 <>

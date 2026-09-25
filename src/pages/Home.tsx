@@ -15,7 +15,7 @@ function Home({ onSelect, onReturnComplete, returnFrom }: HomeProps) {
     const [isBooting, setIsBooting] = useState(true);
 
     return (
-        <section className="relative h-[calc(100dvh-70px)] min-h-0 overflow-hidden sm:h-[calc(100dvh-84px)]">
+        <section className="relative -mx-5 sm:-mx-11 h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden">
             <Suspense fallback={
                 <div className="flex h-full w-full items-center justify-center">
                     <span className="font-mono text-sm uppercase tracking-[.14em] text-muted">
