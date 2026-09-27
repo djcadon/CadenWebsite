@@ -76,11 +76,57 @@ function SkillWorkLayout({ skill, onBack }: SkillWorkLayoutProps) {
                                             <p className="mt-1 font-mono text-xs uppercase tracking-[.08em] text-muted sm:text-sm">
                                                 {role.period.label}
                                             </p>
+                                            {role.awards && role.awards.length > 0 && (
+                                                <div className="mt-3 flex flex-col gap-1">
+                                                    {role.awards.map((award) => (
+                                                        <span
+                                                            key={award}
+                                                            className="font-mono text-xs font-medium text-[#fbbf24] sm:text-sm"
+                                                        >
+                                                            [WINNER] {award}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-6 text-muted">
                                                 {role.description.map((point) => (
                                                     <li key={point}>{point}</li>
                                                 ))}
                                             </ul>
+                                            {(role.repoUrl || role.liveUrl) && (
+                                                <div className="mt-4 flex gap-4 font-mono text-xs uppercase tracking-[.08em]">
+                                                    {role.repoUrl && (
+                                                        <a
+                                                            href={role.repoUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-accent-green no-underline transition-colors hover:text-text"
+                                                        >
+                                                            View Code →
+                                                        </a>
+                                                    )}
+                                                    {role.liveUrl && (
+                                                        <a
+                                                            href={role.liveUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-accent-green no-underline transition-colors hover:text-text"
+                                                        >
+                                                            Live Demo →
+                                                        </a>
+                                                    )}
+                                                    {role.devpostUrl && (
+                                                        <a
+                                                            href={role.devpostUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-accent-green no-underline transition-colors hover:text-text"
+                                                        >
+                                                            View Devpost →
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

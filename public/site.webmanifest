@@ -1,0 +1,17 @@
+{
+    "name": "Caden in Orbit",
+    "short_name": "Caden",
+    "description": "Personal portfolio and workspace.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#191816",
+    "theme_color": "#191816",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

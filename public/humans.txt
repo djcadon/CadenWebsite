@@ -1,0 +1,9 @@
+/* TEAM */
+Engineer: Caden
+Role: Software Engineer, Data Systems, Industrial Automation
+
+/* SITE */
+Last update: 2026
+Language: English
+Stack: React, TypeScript, Vite, Tailwind CSS v4, Three.js
+Glows: Handcrafted CSS radial gradients

@@ -8,6 +8,10 @@ export interface ExperienceRole {
     };
     tools: string[];
     description: string[];
+    repoUrl?: string;
+    liveUrl?: string;
+    devpostUrl?: string;
+    awards?: string[];
 }
 
 export interface Experience {
