@@ -40,7 +40,7 @@ function Header({ onHome }: HeaderProps) {
     }, []);
 
     return (
-        <header className="flex h-[70px] min-w-0 flex-none items-center border-b border-line font-mono text-[9px] uppercase tracking-[.06em] sm:h-[84px] sm:text-sm">
+        <header className="flex h-[var(--header-height)] min-w-0 flex-none items-center border-b border-line font-mono text-xs uppercase tracking-[.06em] sm:text-sm">
             <div aria-label="Current location" className="text-text">
                 <span className="whitespace-nowrap text-sm tracking-[-.06em] sm:text-2xl">
                     C<span className="text-accent">:/</span>Users/
@@ -78,7 +78,7 @@ function Header({ onHome }: HeaderProps) {
                 ))}
             </nav>
             <span className="ml-6 hidden items-center gap-2 text-muted sm:flex">
-                <i className="h-1.5 w-1.5 rounded-full bg-[#a8c58c]" /> online
+                <i className="h-1.5 w-1.5 rounded-full bg-accent-green" /> online
             </span>
         </header>
     );

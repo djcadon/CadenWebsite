@@ -7,8 +7,31 @@
     --color-muted: #88877f;
     --color-line: #33332f;
     --color-accent: #f1bd78;
+    --color-accent-blue: #93b8d8;
+    --color-accent-green: #a8c58c;
+    --color-accent-purple: #c7a0d2;
+    --color-accent-tan: #d7b98e;
     --font-sans: "Space Grotesk", sans-serif;
     --font-mono: "DM Mono", monospace;
+}
+
+@utility glow-work {
+    background: radial-gradient(circle at 80% 20%, #123e59, transparent 38rem);
+}
+@utility glow-archive {
+    background: radial-gradient(circle at 85% 40%, #1b3442, transparent 38rem);
+}
+@utility glow-skills {
+    background: radial-gradient(circle at 75% 30%, #274e32, transparent 38rem);
+}
+@utility glow-about {
+    background: radial-gradient(circle at 90% 50%, #553b2b, transparent 38rem);
+}
+@utility glow-contact {
+    background: radial-gradient(circle at 80% 35%, #382259, transparent 38rem);
+}
+@utility glow-home {
+    background: radial-gradient(circle at 50% 47%, #191816 0, var(--color-bg) 42rem);
 }
 
 html,

@@ -113,7 +113,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             segments: [
                 {
                     text: "[ok]",
-                    className: "text-[#a8c58c]",
+                    className: "text-accent-green",
                     revealAfterComplete: true,
                 },
                 { text: " initializing orbital workspace..." },
@@ -123,7 +123,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             segments: [
                 {
                     text: "[ok]",
-                    className: "text-[#a8c58c]",
+                    className: "text-accent-green",
                     revealAfterComplete: true,
                 },
                 { text: " loading navigation system..." },
@@ -133,7 +133,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             segments: [
                 {
                     text: "[ok]",
-                    className: "text-[#a8c58c]",
+                    className: "text-accent-green",
                     revealAfterComplete: true,
                 },
                 { text: " establishing visual link..." },
@@ -175,10 +175,10 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
         <div
             aria-label="Initializing orbital navigation"
             aria-live="polite"
-            className={`terminal-boot fixed inset-0 z-[100] flex items-center justify-center bg-[#101010] px-6 ${isExiting ? "terminal-boot-exiting" : ""}`}
+            className={`terminal-boot fixed inset-0 z-50 flex items-center justify-center bg-bg px-6 ${isExiting ? "terminal-boot-exiting" : ""}`}
             role="status"
         >
-            <div className="w-full max-w-[620px] font-mono text-xs leading-6 text-muted sm:text-sm">
+            <div className="w-full max-w-2xl font-mono text-xs leading-6 text-muted sm:text-sm">
                 {lines.map((line, index) => (
                     <TerminalLine
                         {...line}

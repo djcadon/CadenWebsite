@@ -56,20 +56,31 @@ function App() {
 
     const handleReturnComplete = () => setReturnFrom(undefined);
 
+    const getGlowClass = (currentPage: string) => {
+        switch (currentPage) {
+            case "work": return "glow-work";
+            case "archive": return "glow-archive";
+            case "skills": return "glow-skills";
+            case "about": return "glow-about";
+            case "contact": return "glow-contact";
+            default: return "glow-home";
+        }
+    };
+
     return (
-        <main className="mx-auto min-h-dvh w-full max-w-[1440px] overflow-hidden bg-[radial-gradient(circle_at_50%_47%,#191816_0,var(--color-bg)_42rem)] px-5 text-text sm:px-11">
+        <main className={`mx-auto min-h-dvh w-full px-5 text-text sm:px-11 ${getGlowClass(page)}`}>
             <Header onHome={() => navigate("home")} />
             {Page ? (
-                <>
+                <div className="flex flex-col">
                     <button
-                        className="mt-12 cursor-pointer border-0 bg-transparent p-0 font-mono text-xs uppercase text-muted hover:text-accent sm:text-sm"
+                        className="mt-8 self-start cursor-pointer border-0 bg-transparent p-0 font-mono text-xs uppercase text-muted hover:text-accent sm:text-sm"
                         type="button"
                         onClick={() => navigate(page === "archive" ? "work" : "home")}
                     >
                         ← {page === "archive" ? "back to work" : "back to orbit"}
                     </button>
                     <Page />
-                </>
+                </div>
             ) : (
                 <Home
                     onSelect={navigate}
