@@ -6,7 +6,7 @@ function Archive() {
     );
 
     return (
-        <section className="relative -mx-5 min-h-[calc(100vh-230px)] glow-archive px-5 py-24 sm:-mx-11 sm:px-11">
+        <section className="relative -mx-5 min-h-[calc(100vh-230px)] px-5 py-24 sm:-mx-11 sm:px-11">
             <p className="font-mono text-xs uppercase tracking-[.12em] text-muted sm:text-sm">
                 02 / archive
             </p>

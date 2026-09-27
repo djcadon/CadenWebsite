@@ -14,7 +14,7 @@ export const organizations: Experience[] = [
                     end: null,
                     label: "Jan 2026 — Present",
                 },
-                tools: ["Software-defined radio", "Yagi antenna", "SQL", "FastAPI"],
+                tools: ["Software-Defined Radio", "Yagi Antenna", "SQL", "FastAPI", "WireGuard"],
                 description: [
                     "Directed the HabSat-1 ground station team at CAS, facilitating cross-functional collaboration with UCARC.",
                     "Synchronized Yagi antennas with software-defined radio (SDR) systems to establish reliable orbital communication links.",
@@ -29,7 +29,7 @@ export const organizations: Experience[] = [
                     end: "2025-12-01",
                     label: "June 2025 — Dec 2025",
                 },
-                tools: ["STM32"],
+                tools: ["STM32", "C"],
                 description: [
                     "Strengthened the On-Board Computer (OBC) firmware through rigorous quality assurance and software testing on STM32 microcontrollers.",
                     "Collaborated on hardware integration and systems engineering for an orbital CubeSat mission.",
@@ -44,7 +44,7 @@ export const organizations: Experience[] = [
                     end: "2025-05-01",
                     label: "Aug 2024 — May 2025",
                 },
-                tools: ["C++", "GPS", "Sensors"],
+                tools: ["C", "Arduino", "GPS", "Sensors"],
                 description: [
                     "Coded flight software in C++ for Project Calico, a high-altitude balloon mission deployed to the stratosphere.",
                     "Assembled telemetry systems to continuously collect, process, and transmit live atmospheric sensor readings.",

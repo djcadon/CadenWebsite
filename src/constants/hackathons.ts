@@ -14,7 +14,7 @@ export const hackathons: Experience[] = [
                     end: "2025-11-09",
                     label: "November 8 2025",
                 },
-                tools: ["Python", "React", "Vite", "FastAPI", "Tailwind CSS", "shadcn/ui"],
+                tools: ["Python", "React", "Vite", "FastAPI", "Tailwind CSS"],
                 description: [
                     "Formulated a household IoT dashboard to aggregate and visualize real-time telemetry from external REST APIs using React, Vite, and a FastAPI proxy server.",
                     "Engineered asynchronous backend routes using aiohttp to securely fetch, filter, and paginate high-frequency sensor and actuator data.",
@@ -29,7 +29,7 @@ export const hackathons: Experience[] = [
                     end: "2024-11-10",
                     label: "MakeUC 9 2024",
                 },
-                tools: ["Python", "Flask", "Matplotlib", "JavaScript", "Tailwind CSS", "G-code"],
+                tools: ["Python", "Flask", "JavaScript", "Tailwind CSS", "G-code"],
                 description: [
                     "Engineered a Python and Flask backend to parse complex G-code instructions, mapping extrusion toolpaths into 3D coordinates.",
                     "Programmed custom geometric algorithms to generate raw .obj mesh data and face connections directly from sequential movements.",
