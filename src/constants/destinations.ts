@@ -13,7 +13,7 @@ export const destinations = [
     {
         id: "work",
         label: "Work",
-        description: "A selection of things I have made.",
+        description: "Professional work and engineering projects.",
         color: 0x93b8d8,
         distance: 6.1,
         size: 0.75,

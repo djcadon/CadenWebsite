@@ -15,12 +15,12 @@ function Header({ onHome }: HeaderProps) {
         {
             id: "work",
             label: "work",
-            description: "Software, data, and engineering projects.",
+            description: "Professional work and engineering projects.",
         },
         {
             id: "skills",
             label: "skills",
-            description: "Programming, data, systems, and troubleshooting.",
+            description: "The tools I use to build useful things.",
         },
         {
             id: "contact",

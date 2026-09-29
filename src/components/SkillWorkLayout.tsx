@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { sortedExperiences } from "../constants/experiences";
 
 interface SkillWorkLayoutProps {
@@ -11,10 +12,12 @@ const matchSkill = (skillName: string, tools: string[]) => {
         const t = tool.toLowerCase();
         if (s === t) return true;
         // Word boundary match for exact tool name within the formatted skill name
+        // (e.g. matching "React" inside "React / Next.js")
         const toolRegex = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
         if (toolRegex.test(s)) return true;
         
-        // Manual aliases for heavily editorialized terms
+        // Manual aliases for heavily editorialized terms in the skills list
+        // that map to specific tools in the experiences list
         if (s.includes('telemetry') && t.includes('sensor')) return true;
         if (s.includes('laser') && t.includes('laser')) return true;
         if (s.includes('hmi') && t.includes('hmi')) return true;
@@ -35,7 +38,7 @@ function SkillWorkLayout({ skill, onBack }: SkillWorkLayoutProps) {
         .filter((exp) => exp.roles.length > 0);
 
     return (
-        <div className="animate-in fade-in duration-300">
+        <div>
             <button
                 className="mb-8 cursor-pointer border-0 bg-transparent p-0 font-mono text-xs uppercase text-muted hover:text-accent-green sm:text-sm"
                 type="button"
@@ -53,7 +56,11 @@ function SkillWorkLayout({ skill, onBack }: SkillWorkLayoutProps) {
             ) : (
                 <div className="mt-8 max-w-6xl border-t border-line">
                     {filteredExperiences.map((experience, index) => (
-                        <article
+                        <motion.article
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, margin: "-50px" }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
                             className="grid gap-5 border-b border-line py-7 sm:grid-cols-2 sm:gap-8"
                             key={experience.company}
                         >
@@ -152,7 +159,7 @@ function SkillWorkLayout({ skill, onBack }: SkillWorkLayoutProps) {
                                         ))}
                                 </ul>
                             </div>
-                        </article>
+                        </motion.article>
                     ))}
                 </div>
             )}
