@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { sortedExperiences } from "../constants/experiences";
 
 function Archive() {
@@ -6,7 +7,7 @@ function Archive() {
     );
 
     return (
-        <section className="relative -mx-5 min-h-[calc(100vh-230px)] px-5 py-24 sm:-mx-11 sm:px-11">
+        <section className="relative -mx-5 min-h-[calc(100vh-230px)] px-5 pt-12 pb-24 sm:-mx-11 sm:px-11">
             <p className="font-mono text-xs uppercase tracking-[.12em] text-muted sm:text-sm">
                 02 / archive
             </p>
@@ -20,7 +21,11 @@ function Archive() {
             </p>
             <div className="mt-16 max-w-6xl border-t border-line">
                 {archivedExperiences.map((experience, index) => (
-                    <article
+                    <motion.article
+                        initial={{ opacity: 0, x: 50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
                         className="grid gap-5 border-b border-line py-7 sm:grid-cols-2 sm:gap-8"
                         key={experience.company}
                     >
@@ -45,11 +50,57 @@ function Archive() {
                                             <p className="mt-1 font-mono text-xs uppercase tracking-[.08em] text-muted sm:text-sm">
                                                 {role.period.label}
                                             </p>
+                                            {role.awards && role.awards.length > 0 && (
+                                                <div className="mt-3 flex flex-col gap-1">
+                                                    {role.awards.map((award) => (
+                                                        <span
+                                                            key={award}
+                                                            className="font-mono text-xs font-medium text-[#fbbf24] sm:text-sm"
+                                                        >
+                                                            [WINNER] {award}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-6 text-muted">
                                                 {role.description.map((point) => (
                                                     <li key={point}>{point}</li>
                                                 ))}
                                             </ul>
+                                            {(role.repoUrl || role.liveUrl) && (
+                                                <div className="mt-4 flex gap-4 font-mono text-xs uppercase tracking-[.08em]">
+                                                    {role.repoUrl && (
+                                                        <a
+                                                            href={role.repoUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-accent-blue no-underline transition-colors hover:text-text"
+                                                        >
+                                                            View Code →
+                                                        </a>
+                                                    )}
+                                                    {role.liveUrl && (
+                                                        <a
+                                                            href={role.liveUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-accent-blue no-underline transition-colors hover:text-text"
+                                                        >
+                                                            Live Demo →
+                                                        </a>
+                                                    )}
+                                                    {role.devpostUrl && (
+                                                        <a
+                                                            href={role.devpostUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-accent-blue no-underline transition-colors hover:text-text"
+                                                        >
+                                                            View Devpost →
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                             </div>
@@ -74,7 +125,7 @@ function Archive() {
                                     ))}
                             </ul>
                         </div>
-                    </article>
+                    </motion.article>
                 ))}
             </div>
         </section>

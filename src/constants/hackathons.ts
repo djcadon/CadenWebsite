@@ -8,12 +8,15 @@ export const hackathons: Experience[] = [
         roles: [
             {
                 archive: true,
-                title: "Kinetic Vision Challenge",
+                title: "Sensor Sentinel",
                 period: {
                     start: "2025-11-08",
                     end: "2025-11-09",
                     label: "November 8 2025",
                 },
+                repoUrl: "https://github.com/djcadon/MakeUC2025-KVChallenge",
+                devpostUrl: "https://devpost.com/software/sensor-sentinels",
+                awards: ["Kinetic Vision Most Innovative Use of IoT Data"],
                 tools: ["Python", "React", "Vite", "FastAPI", "Tailwind CSS"],
                 description: [
                     "Formulated a household IoT dashboard to aggregate and visualize real-time telemetry from external REST APIs using React, Vite, and a FastAPI proxy server.",
@@ -29,6 +32,9 @@ export const hackathons: Experience[] = [
                     end: "2024-11-10",
                     label: "MakeUC 9 2024",
                 },
+                repoUrl: "https://github.com/djcadon/GCS",
+                devpostUrl: "https://devpost.com/software/gcs-geometric-code-slicer",
+                awards: ["Best Hardware Hack"],
                 tools: ["Python", "Flask", "JavaScript", "Tailwind CSS", "G-code"],
                 description: [
                     "Engineered a Python and Flask backend to parse complex G-code instructions, mapping extrusion toolpaths into 3D coordinates.",
@@ -52,6 +58,9 @@ export const hackathons: Experience[] = [
                     end: "2026-03-29",
                     label: "March 29, 2026",
                 },
+                repoUrl: "https://github.com/NekruzAsh/nicepowertracer",
+                devpostUrl: "https://devpost.com/software/nice-powertracer",
+                awards: ["Best Use of .Tech"],
                 tools: ["Next.js", "React", "ESP32", "C++", "JavaScript"],
                 description: [
                     "Constructed an interactive circuit simulation frontend in Next.js and React to visualize dynamic electrical power flow across various consumer components.",
@@ -74,6 +83,7 @@ export const hackathons: Experience[] = [
                     end: "2025-11-01",
                     label: "NASA Hackathon 2025",
                 },
+                repoUrl: "https://github.com/mezosauce/NASAHackathon2025",
                 tools: ["FastAPI", "Python", "Supabase", "FAISS", "Ollama", "React"],
                 description: [
                     "Devised a local Retrieval-Augmented Generation (RAG) API to intelligently query complex NASA bioscience publications, backed by Supabase Postgres.",

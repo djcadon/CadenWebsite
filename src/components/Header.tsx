@@ -15,12 +15,12 @@ function Header({ onHome }: HeaderProps) {
         {
             id: "work",
             label: "work",
-            description: "Software, data, and engineering projects.",
+            description: "Professional work and engineering projects.",
         },
         {
             id: "skills",
             label: "skills",
-            description: "Programming, data, systems, and troubleshooting.",
+            description: "The tools I use to build useful things.",
         },
         {
             id: "contact",
@@ -39,16 +39,38 @@ function Header({ onHome }: HeaderProps) {
         };
     }, []);
 
+    const getAccentClass = (currentPage: string) => {
+        switch (currentPage) {
+            case "work": return "text-accent-blue";
+            case "archive": return "text-accent-blue";
+            case "skills": return "text-accent-green";
+            case "about": return "text-accent-tan";
+            case "contact": return "text-accent-purple";
+            default: return "text-accent";
+        }
+    };
+
+    const getHoverAccentClass = (currentPage: string) => {
+        switch (currentPage) {
+            case "work": return "hover:text-accent-blue";
+            case "archive": return "hover:text-accent-blue";
+            case "skills": return "hover:text-accent-green";
+            case "about": return "hover:text-accent-tan";
+            case "contact": return "hover:text-accent-purple";
+            default: return "hover:text-accent";
+        }
+    };
+
     return (
         <header className="flex h-[var(--header-height)] min-w-0 flex-none items-center border-b border-line font-mono text-xs uppercase tracking-[.06em] sm:text-sm">
-            <div aria-label="Current location" className="text-text">
+            <div aria-label="Current location" className="text-text flex min-w-0 shrink">
                 <span className="whitespace-nowrap text-sm tracking-[-.06em] sm:text-2xl">
-                    C<span className="text-accent">:/</span>Users/
+                    <span className="hidden sm:inline">C</span><span className={`hidden sm:inline ${getAccentClass(page)}`}>:/</span><span className="hidden sm:inline">Users/</span>
                     <a
                         // Treat the directory name like a terminal parent-directory
                         // link while keeping navigation inside the React app.
                         aria-label="Return to home directory"
-                        className="text-accent no-underline transition-colors hover:text-text"
+                        className={`${getAccentClass(page)} no-underline transition-colors hover:text-text`}
                         href="/"
                         title="Return to orbital system"
                         onClick={(event) => {
@@ -56,11 +78,11 @@ function Header({ onHome }: HeaderProps) {
                             onHome();
                         }}
                     >
-                        Caden
+                        <span className="hidden sm:inline">Caden/</span>
+                        <span className="sm:hidden">~/</span>
                     </a>
-                    /
                 </span>
-                <span className="whitespace-nowrap text-sm tracking-[-.06em] text-text sm:text-2xl">
+                <span className="truncate text-sm tracking-[-.06em] text-text sm:text-2xl">
                     {page === "home" ? "" : page}
                 </span>
             </div>
@@ -68,7 +90,7 @@ function Header({ onHome }: HeaderProps) {
                 {navigation.map(({ id, label, description }) => (
                     <a
                         aria-label={`${label}: ${description}`}
-                        className="text-muted no-underline transition-colors hover:text-accent"
+                        className={`${id === page ? getAccentClass(id) : "text-muted"} no-underline transition-colors ${getHoverAccentClass(id)}`}
                         href={`#${id}`}
                         key={id}
                         title={description}
