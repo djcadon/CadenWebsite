@@ -144,12 +144,12 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         }
 
         // Ambient light fills the scene while the point light gives the sun and planets their highlights.
-        scene.add(new THREE.AmbientLight(0x9da6b5, 0.42));
-        const sunLight = new THREE.PointLight(0xffd39b, 32, 35, 2);
-        scene.add(sunLight);
+        scene.add(new THREE.AmbientLight(0x9da6b5, 0.2));
+        const sunLight = new THREE.PointLight(0xffd39b, 40, 45, 2);
 
         // The system group lets the whole solar system share a slight tilt.
         const system = new THREE.Group();
+        system.add(sunLight);
         system.rotation.x = SYSTEM_TILT;
         system.position.y = ORBIT_VERTICAL_OFFSET;
         system.scale.setScalar(sceneScale);
@@ -188,14 +188,17 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         starContext.fill();
         const starTexture = new THREE.CanvasTexture(starCanvas);
         starTexture.colorSpace = THREE.SRGBColorSpace;
-
+        const starClouds: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>[] = [];
+        const starGeometries: THREE.BufferGeometry[] = [];
+        const starBaseColors: Float32Array[] = [];
+        
         starGroups.forEach(({ count, size }) => {
             const starGeometry = new THREE.BufferGeometry();
             const starPositions = new Float32Array(count * 3);
             const starColors = new Float32Array(count * 3);
             for (let i = 0; i < count; i += 1) {
                 const position = i * 3;
-                const brightness = 0.16 + Math.random() * 0.48;
+                const brightness = 0.3 + Math.random() * 0.7; // Made stars brighter overall
                 // Spread stars through a shallow box around the orbital plane.
                 starPositions[position] = (Math.random() - 0.5) * 42;
                 starPositions[position + 1] = (Math.random() - 0.5) * 24;
@@ -206,31 +209,83 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             }
             starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
             starGeometry.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
-            scene.add(
-                new THREE.Points(
-                    starGeometry,
-                    new THREE.PointsMaterial({
-                        size,
-                        map: starTexture,
-                        vertexColors: true,
-                        transparent: true,
-                        opacity: 0.85,
-                        depthWrite: false,
-                        sizeAttenuation: true,
-                    }),
-                ),
+            const points = new THREE.Points(
+                starGeometry,
+                new THREE.PointsMaterial({
+                    size,
+                    map: starTexture,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 1, // Full opacity, we modulate color now
+                    depthWrite: false,
+                    sizeAttenuation: true,
+                }),
             );
+            starClouds.push(points);
+            starGeometries.push(starGeometry);
+            starBaseColors.push(starColors.slice()); // Save original colors for twinkle math
+            scene.add(points);
         });
 
-        // The sun is composed of a lit core and a transparent outer halo.
+        // Shooting Star
+        const shootingStar = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 })
+        );
+        shootingStar.scale.z = 25; // Stretch into a line
+        scene.add(shootingStar);
+        
+        let shootingStarProgress = 1;
+        const shootingStarStart = new THREE.Vector3();
+        const shootingStarEnd = new THREE.Vector3();
+
+        // The sun is composed of a custom procedural shader. We use ShaderMaterial here 
+        // to mathematical generate the surface pattern in real-time on the GPU. 
+        // This avoids heavy image textures while still creating a dynamic, slow-shifting 
+        // surface effect that makes the star feel "hot" and active.
+        const sunUniforms = {
+            time: { value: 0 }
+        };
+        const sunMaterial = new THREE.ShaderMaterial({
+            uniforms: sunUniforms,
+            vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vPosition;
+                void main() {
+                    vUv = uv;
+                    vPosition = position;
+                    // Keep the sphere perfectly round
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                varying vec2 vUv;
+                varying vec3 vPosition;
+                void main() {
+                    // Very slow, subtle, large-scale noise
+                    float noise = sin(vPosition.x * 2.0 + time * 0.5) * 
+                                  cos(vPosition.y * 2.0 + time * 0.4) * 
+                                  sin(vPosition.z * 2.0 - time * 0.3);
+                    
+                    float intensity = (noise + 1.0) * 0.5;
+                    
+                    // Original base color: 0xe8a95e (approx 0.91, 0.66, 0.37)
+                    // Slightly darker/warmer color: 0xcc7a22 (approx 0.8, 0.48, 0.13)
+                    vec3 baseColor = vec3(0.91, 0.66, 0.37);
+                    vec3 warmColor = vec3(0.8, 0.48, 0.13);
+                    
+                    // Softly mix them
+                    vec3 color = mix(warmColor, baseColor, intensity);
+                    
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `
+        });
+
         const sun = new THREE.Mesh(
             new THREE.SphereGeometry(1.5, isMobile ? 32 : 48, isMobile ? 32 : 48),
-            new THREE.MeshStandardMaterial({
-                color: 0xe8a95e,
-                emissive: 0x9d4c1c,
-                emissiveIntensity: 1.4,
-                roughness: 0.7,
-            }),
+            sunMaterial
         );
         system.add(sun);
 
@@ -277,13 +332,76 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             const planetFrame = new THREE.Group();
             planetFrame.rotation.copy(orbitFrame.rotation);
             system.add(planetFrame);
+            const material = new THREE.MeshStandardMaterial({
+                color: destination.color,
+                roughness: 0.72,
+                metalness: 0.05,
+            });
+
+            // We want the planets to have unique, swirling surface patterns (like gas giants or clouds).
+            // However, if we just used a raw ShaderMaterial (like we did for the sun), the planets 
+            // would no longer react to the scene's lighting, shadows, or roughness settings. 
+            // 
+            // The solution is `.onBeforeCompile`: This allows us to hook into Three.js's built-in 
+            // MeshStandardMaterial and inject our own custom 3D noise algorithm right into its fragment 
+            // shader BEFORE it gets compiled. This way, we get the mathematical patterns while perfectly 
+            // preserving all the complex lighting physics!
+            material.onBeforeCompile = (shader) => {
+                // Pass a unique seed to each planet based on its index so they all look different
+                shader.uniforms.seed = { value: index * 13.37 };
+                
+                shader.vertexShader = `
+                    varying vec3 vObjPos;
+                ` + shader.vertexShader;
+                
+                shader.vertexShader = shader.vertexShader.replace(
+                    '#include <begin_vertex>',
+                    `
+                    #include <begin_vertex>
+                    vObjPos = position;
+                    `
+                );
+
+                shader.fragmentShader = `
+                    uniform float seed;
+                    varying vec3 vObjPos;
+                    
+                    // Simple 3D noise function
+                    float hash(vec3 p) {
+                        p = fract(p * 0.3183099 + 0.1);
+                        p *= 17.0;
+                        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+                    }
+                    float noise(in vec3 x) {
+                        vec3 p = floor(x);
+                        vec3 f = fract(x);
+                        f = f * f * (3.0 - 2.0 * f);
+                        return mix(mix(mix(hash(p + vec3(0,0,0)), hash(p + vec3(1,0,0)), f.x),
+                                       mix(hash(p + vec3(0,1,0)), hash(p + vec3(1,1,0)), f.x), f.y),
+                                   mix(mix(hash(p + vec3(0,0,1)), hash(p + vec3(1,0,1)), f.x),
+                                       mix(hash(p + vec3(0,1,1)), hash(p + vec3(1,1,1)), f.x), f.y), f.z);
+                    }
+                ` + shader.fragmentShader;
+
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    'vec4 diffuseColor = vec4( diffuse, opacity );',
+                    `
+                    // Combine layers of noise for a marbled look
+                    float n1 = noise(vObjPos * 3.0 + seed);
+                    float n2 = noise(vObjPos * 6.0 - seed);
+                    float finalNoise = (n1 * 0.7) + (n2 * 0.3);
+                    
+                    // Darken or lighten the base color slightly based on the noise
+                    vec3 patternColor = mix(diffuse * 0.5, diffuse * 1.5, finalNoise);
+                    
+                    vec4 diffuseColor = vec4( patternColor, opacity );
+                    `
+                );
+            };
+
             const mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(destination.size, isMobile ? 20 : 32, isMobile ? 20 : 32),
-                new THREE.MeshStandardMaterial({
-                    color: destination.color,
-                    roughness: 0.72,
-                    metalness: 0.05,
-                }),
+                new THREE.SphereGeometry(destination.size, isMobile ? 32 : 48, isMobile ? 32 : 48),
+                material
             );
             mesh.userData = { id: destination.id };
             planetFrame.add(mesh);
@@ -434,16 +552,28 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                     onReturnCompleteRef.current();
                 }
             }
-            // Move each planet and project its 3D position into screen coordinates
-            // so its HTML label follows it.
-            planets.forEach(({ mesh, hitbox, angle, distance, speed }) => {
+            // We map over each planet to update its position along its orbital ring.
+            planets.forEach(({ mesh, hitbox, angle, distance, speed }, index) => {
+                // Trigonometry (sine and cosine) is used to calculate the X and Z coordinates
+                // of the circular orbit based on the elapsed time and planet speed.
                 mesh.position.set(
                     Math.cos(angle + elapsed * speed) * distance,
                     0,
                     Math.sin(angle + elapsed * speed) * distance,
                 );
                 hitbox.position.copy(mesh.position);
-                mesh.rotation.y = elapsed * speed;
+                
+                // AXIAL ROTATION:
+                // We give each planet a unique axial rotation speed (spinning on its own Y axis)
+                mesh.rotation.y = elapsed * (0.15 + (index * 0.2));
+                // We also add a tiny bit of off-axis tilt wobble (like Earth's 23.5 degree tilt).
+                // This makes the procedural noise patterns look fully 3D and dynamic as they spin.
+                mesh.rotation.x = elapsed * (0.02 + (index * 0.03));
+                mesh.rotation.z = elapsed * (0.01 + (index * 0.01));
+                
+                // HTML TRACKING:
+                // We project the planet's 3D world position back into flat 2D screen coordinates
+                // so that we can perfectly overlay standard HTML text labels on top of the WebGL canvas.
                 const projected = mesh.getWorldPosition(projectedPosition).project(camera);
                 const label = labelRefs.current[mesh.userData.id];
                 if (label) {
@@ -475,8 +605,48 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                     onSelectRef.current(zoomTarget.userData.id);
                 }
             }
+            // STAR TWINKLE (Individual Shimmer)
+            // Rather than animating an entire layer of stars at once, we tap directly into the 
+            // WebGL buffer geometry. This allows us to modify the brightness of thousands of 
+            // individual stars independently at 60fps with almost zero performance cost.
+            starGeometries.forEach((geometry, groupIndex) => {
+                const colors = geometry.attributes.color.array as Float32Array;
+                const baseColors = starBaseColors[groupIndex];
+                for (let i = 0; i < colors.length; i += 3) {
+                    // Create a unique phase for each star based on its index and position
+                    const phase = i * 0.1 + elapsed * (2.0 + (i % 3));
+                    // Fluctuate between 20% and 100% of base brightness
+                    const twinkle = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(phase));
+                    colors[i] = baseColors[i] * twinkle;
+                    colors[i + 1] = baseColors[i + 1] * twinkle;
+                    colors[i + 2] = baseColors[i + 2] * twinkle;
+                }
+                geometry.attributes.color.needsUpdate = true;
+            });
+
+            // Pulsing Sun Halo
+            const pulse = Math.sin(elapsed * 1.5);
+            sunHalo.scale.setScalar(1 + pulse * 0.04);
+            sunHalo.material.opacity = 0.08 + pulse * 0.03;
+
+            // Shooting Star Logic
+            if (shootingStarProgress >= 1 && Math.random() < 0.003) {
+                shootingStarProgress = 0;
+                shootingStarStart.set((Math.random() - 0.5) * 40, (Math.random() - 0.5) * 20, -15 - Math.random() * 10);
+                shootingStarEnd.copy(shootingStarStart).add(new THREE.Vector3(20 + Math.random() * 10, -10 - Math.random() * 10, 0));
+                shootingStar.position.copy(shootingStarStart);
+                shootingStar.lookAt(shootingStarEnd);
+            }
+            if (shootingStarProgress < 1) {
+                shootingStarProgress += delta * 1.2;
+                shootingStar.position.lerpVectors(shootingStarStart, shootingStarEnd, shootingStarProgress);
+                (shootingStar.material as THREE.MeshBasicMaterial).opacity = Math.sin(shootingStarProgress * Math.PI);
+            }
+
             // Slowly rotate the sun while rendering the current frame.
             sun.rotation.y = elapsed * SUN_ROTATION_SPEED;
+            sunUniforms.time.value = elapsed;
+
             renderer.render(scene, camera);
             performanceMonitor?.end();
             frame = requestAnimationFrame(animate);

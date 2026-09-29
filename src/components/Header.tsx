@@ -63,9 +63,9 @@ function Header({ onHome }: HeaderProps) {
 
     return (
         <header className="flex h-[var(--header-height)] min-w-0 flex-none items-center border-b border-line font-mono text-xs uppercase tracking-[.06em] sm:text-sm">
-            <div aria-label="Current location" className="text-text">
+            <div aria-label="Current location" className="text-text flex min-w-0 shrink">
                 <span className="whitespace-nowrap text-sm tracking-[-.06em] sm:text-2xl">
-                    C<span className={getAccentClass(page)}>:/</span>Users/
+                    <span className="hidden sm:inline">C</span><span className={`hidden sm:inline ${getAccentClass(page)}`}>:/</span><span className="hidden sm:inline">Users/</span>
                     <a
                         // Treat the directory name like a terminal parent-directory
                         // link while keeping navigation inside the React app.
@@ -78,11 +78,11 @@ function Header({ onHome }: HeaderProps) {
                             onHome();
                         }}
                     >
-                        Caden
+                        <span className="hidden sm:inline">Caden/</span>
+                        <span className="sm:hidden">~/</span>
                     </a>
-                    /
                 </span>
-                <span className="whitespace-nowrap text-sm tracking-[-.06em] text-text sm:text-2xl">
+                <span className="truncate text-sm tracking-[-.06em] text-text sm:text-2xl">
                     {page === "home" ? "" : page}
                 </span>
             </div>
