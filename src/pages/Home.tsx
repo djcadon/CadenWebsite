@@ -2,7 +2,8 @@ import { useState, lazy, Suspense } from "react";
 import TerminalBoot from "../components/TerminalBoot";
 import type { DestinationId } from "../constants/destinations";
 
-const OrbitalScene = lazy(() => import("../components/OrbitalScene"));
+const OrbitalScene = lazy(() => import("../components/orbital/OrbitalScene"));
+const BOOT_SESSION_KEY = "caden-orbital-boot-seen";
 
 interface HomeProps {
     onSelect: (destination: string) => void;
@@ -12,7 +13,9 @@ interface HomeProps {
 
 function Home({ onSelect, onReturnComplete, returnFrom }: HomeProps) {
     // Home coordinates the scene with the terminal intro and page return zoom.
-    const [isBooting, setIsBooting] = useState(true);
+    const [isBooting, setIsBooting] = useState(
+        () => sessionStorage.getItem(BOOT_SESSION_KEY) !== "true",
+    );
 
     return (
         <section aria-hidden="true" className="relative -mx-5 sm:-mx-11 h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden">

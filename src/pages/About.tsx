@@ -26,9 +26,15 @@ function About() {
                     </p>
                     <p className="mt-3 text-text">University of Cincinnati</p>
                     <p className="text-sm text-muted">
-                        B.S. Computer Science · Minor in IT
+                        B.S. Computer Science
                         <br />
-                        Expected May 2027 · GPA 3.74
+                        IT Minor
+                        <br />
+                        Cyber Operations Certification
+                        <br />
+                        Expected May 2027
+                        <br />
+                        GPA 3.8
                     </p>
                 </div>
                 <div>

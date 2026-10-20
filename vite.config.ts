@@ -8,4 +8,8 @@ export default defineConfig({
     server: {
         port: 58133,
     },
+    build: {
+        // Increase limit for Three.js and React Three Fiber
+        chunkSizeWarningLimit: 800,
+    },
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 interface TerminalBootProps {
     onComplete: () => void;
@@ -9,13 +9,18 @@ const CHARACTER_DELAY_MS = 55;
 const EXIT_FADE_DELAY_MS = 1500;
 const BOOT_COMPLETE_DELAY_MS = 2000;
 
+interface TerminalSegment {
+    text: string;
+    className?: string;
+    revealAfterComplete?: boolean;
+    isPrompt?: boolean;
+}
+
 interface TerminalLineProps {
-    segments: Array<{
-        text: string;
-        className?: string;
-        revealAfterComplete?: boolean;
-    }>;
+    segments: TerminalSegment[];
     cursor?: boolean;
+    isCommand?: boolean;
+    processingDelay?: number;
     isActive: boolean;
     isComplete: boolean;
     onComplete: () => void;
@@ -24,67 +29,116 @@ interface TerminalLineProps {
 function TerminalLine({
     segments,
     cursor = false,
+    isCommand = false,
+    processingDelay = 400,
     isActive,
     isComplete,
     onComplete,
 }: TerminalLineProps) {
-    let characterIndex = 0;
-    const [lineComplete, setLineComplete] = useState(
-        isComplete || (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches),
+    const totalTypedCharacters = segments.reduce(
+        (sum, seg) => (seg.isPrompt ? sum : sum + seg.text.length),
+        0,
     );
+    // If it is an output line (not a command), it instantly prints all characters
+    const [visibleCount, setVisibleCount] = useState(
+        isComplete || !isCommand || (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches) 
+            ? totalTypedCharacters 
+            : 0
+    );
+    // Track when the line has finished its "processing" delay
+    const [lineDone, setLineDone] = useState(isComplete);
 
     useEffect(() => {
-        if (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            onComplete();
+        if (!isActive || isComplete) return;
+
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            const timer = setTimeout(() => {
+                setVisibleCount(totalTypedCharacters);
+                setLineDone(true);
+                onComplete();
+            }, 0);
+            return () => clearTimeout(timer);
         }
-    }, [isActive, onComplete]);
+
+        if (isCommand) {
+            // Typing effect for the command line
+            if (visibleCount < totalTypedCharacters) {
+                const isPause = Math.random() > 0.85;
+                const isFast = Math.random() > 0.5;
+                let delay = CHARACTER_DELAY_MS;
+                
+                if (isPause) delay += 100;
+                else if (isFast) delay -= 30;
+
+                const timer = setTimeout(() => {
+                    setVisibleCount((prev) => prev + 1);
+                }, delay);
+                return () => clearTimeout(timer);
+            } else {
+                const completeTimer = setTimeout(() => {
+                    setLineDone(true);
+                    onComplete();
+                }, 150); // slight pause after typing before running
+                return () => clearTimeout(completeTimer);
+            }
+        } else {
+            // Output lines instantly appear, but take time to "process"
+            const processTimer = setTimeout(() => {
+                setLineDone(true);
+                onComplete();
+            }, processingDelay);
+            return () => clearTimeout(processTimer);
+        }
+    }, [isActive, isComplete, visibleCount, totalTypedCharacters, onComplete, isCommand, processingDelay]);
 
     if (!isActive && !isComplete) {
         return null;
     }
 
+    let currentTypedIdx = 0;
+    // Only show typing cursor if this line is actively being typed out
+    const showTypingCursor = isActive && isCommand && visibleCount < totalTypedCharacters;
+    // Show final cursor if this line is marked to hold the cursor at the end (blinking while active and complete)
+    const showFinalCursor = cursor && (isActive || isComplete);
+
     return (
         <p className="terminal-boot-line">
-            {segments.map((segment) => (
-                <span className={segment.className} key={segment.text}>
-                    {Array.from(
-                        segment.revealAfterComplete && !lineComplete
-                            ? segment.text.replace(/[^\s]/g, " ")
-                            : segment.text,
-                    ).map((character) => {
-                        const index = characterIndex;
-                        characterIndex += 1;
-                        return (
-                            <span
-                                className={`terminal-character ${isComplete || lineComplete ? "terminal-character-visible" : ""}`}
-                                key={`${segment.text}-${index}`}
-                                onAnimationEnd={
-                                    isActive &&
-                                    index ===
-                                        segments.reduce(
-                                            (total, current) => total + current.text.length,
-                                            0,
-                                        ) -
-                                            1
-                                        ? () => {
-                                              setLineComplete(true);
-                                              onComplete();
-                                          }
-                                        : undefined
-                                }
-                                style={
-                                    {
-                                        animationDelay: `${index * CHARACTER_DELAY_MS}ms`,
-                                    } as CSSProperties
-                                }
-                            >
-                                {character === " " ? "\u00a0" : character}
-                            </span>
-                        );
-                    })}
-                </span>
-            ))}
-            {cursor && (isComplete || lineComplete) && <span className="terminal-cursor">_</span>}
+            {segments.map((segment, segIndex) => {
+                const segmentChars = Array.from(segment.text);
+                return (
+                    <span className={segment.className} key={segIndex}>
+                        {segmentChars.map((character, charIndex) => {
+                            const isVisible =
+                                isComplete ||
+                                segment.isPrompt ||
+                                currentTypedIdx < visibleCount;
+
+                            if (!segment.isPrompt) {
+                                currentTypedIdx++;
+                            }
+
+                            if (!isVisible) return null;
+
+                            let displayChar = character;
+                            // For segments that reveal their text only after the line is completely done processing
+                            if (segment.revealAfterComplete && !lineDone) {
+                                displayChar = character.replace(/[^\s]/g, "\u00a0");
+                            }
+
+                            return (
+                                <span
+                                    className="terminal-character"
+                                    key={`${segIndex}-${charIndex}`}
+                                >
+                                    {displayChar === " " ? "\u00a0" : displayChar}
+                                </span>
+                            );
+                        })}
+                    </span>
+                );
+            })}
+            {showTypingCursor && <span className="terminal-cursor">_</span>}
+            {showFinalCursor && <span className="terminal-cursor">_</span>}
         </p>
     );
 }
@@ -103,13 +157,16 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
     // than fixed timers, so text speed changes cannot desynchronize the sequence.
     const lines = [
         {
+            isCommand: true,
             segments: [
-                { text: "C:/Users/Caden/", className: "text-accent" },
-                { text: "> ", className: "text-text" },
+                { text: "C:/Users/Caden/", className: "text-accent hidden sm:inline", isPrompt: true },
+                { text: "~/", className: "text-accent sm:hidden", isPrompt: true },
+                { text: "> ", className: "text-text", isPrompt: true },
                 { text: "launch --orbital-interface" },
             ],
         },
         {
+            processingDelay: 500,
             segments: [
                 {
                     text: "[ok]",
@@ -120,6 +177,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             ],
         },
         {
+            processingDelay: 600,
             segments: [
                 {
                     text: "[ok]",
@@ -130,6 +188,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             ],
         },
         {
+            processingDelay: 500,
             segments: [
                 {
                     text: "[ok]",
@@ -140,6 +199,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             ],
         },
         {
+            processingDelay: 800,
             segments: [{ text: "orbit system online", className: "text-text" }],
             cursor: true,
         },
@@ -171,14 +231,24 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
         return null;
     }
 
+    const handleSkip = () => {
+        if (isExiting) return;
+        setIsExiting(true);
+        window.setTimeout(() => {
+            sessionStorage.setItem(BOOT_SESSION_KEY, "true");
+            setIsVisible(false);
+        }, 600);
+    };
+
     return (
         <div
             aria-label="Initializing orbital navigation"
             aria-live="polite"
-            className={`terminal-boot fixed inset-0 z-50 flex items-center justify-center bg-bg px-6 ${isExiting ? "terminal-boot-exiting" : ""}`}
+            className={`terminal-boot fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg px-6 ${isExiting ? "terminal-boot-exiting" : ""}`}
             role="status"
         >
-            <div className="w-full max-w-2xl font-mono text-xs leading-6 text-muted sm:text-sm">
+            {/* Give the terminal block a fixed height so it doesn't push the layout around as lines appear */}
+            <div className="w-full max-w-2xl h-32 font-mono text-xs leading-6 text-muted sm:text-sm">
                 {lines.map((line, index) => (
                     <TerminalLine
                         {...line}
@@ -189,6 +259,14 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
                     />
                 ))}
             </div>
+            
+            <button
+                aria-label="Skip boot sequence"
+                className={`mt-16 font-mono text-xs text-muted/40 transition-colors hover:text-text focus:outline-none focus:ring-1 focus:ring-accent ${isExiting ? "pointer-events-none opacity-0" : ""}`}
+                onClick={handleSkip}
+            >
+                [skip]
+            </button>
         </div>
     );
 }
