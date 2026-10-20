@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 interface TerminalBootProps {
     onComplete: () => void;
@@ -9,12 +9,15 @@ const CHARACTER_DELAY_MS = 55;
 const EXIT_FADE_DELAY_MS = 1500;
 const BOOT_COMPLETE_DELAY_MS = 2000;
 
+interface TerminalSegment {
+    text: string;
+    className?: string;
+    revealAfterComplete?: boolean;
+    isPrompt?: boolean;
+}
+
 interface TerminalLineProps {
-    segments: Array<{
-        text: string;
-        className?: string;
-        revealAfterComplete?: boolean;
-    }>;
+    segments: TerminalSegment[];
     cursor?: boolean;
     isCommand?: boolean;
     processingDelay?: number;
@@ -32,11 +35,14 @@ function TerminalLine({
     isComplete,
     onComplete,
 }: TerminalLineProps) {
-    const totalCharacters = segments.reduce((sum, seg) => sum + seg.text.length, 0);
+    const totalTypedCharacters = segments.reduce(
+        (sum, seg) => (seg.isPrompt ? sum : sum + seg.text.length),
+        0,
+    );
     // If it is an output line (not a command), it instantly prints all characters
     const [visibleCount, setVisibleCount] = useState(
         isComplete || !isCommand || (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches) 
-            ? totalCharacters 
+            ? totalTypedCharacters 
             : 0
     );
     // Track when the line has finished its "processing" delay
@@ -46,15 +52,17 @@ function TerminalLine({
         if (!isActive || isComplete) return;
 
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            setVisibleCount(totalCharacters);
-            setLineDone(true);
-            onComplete();
-            return;
+            const timer = setTimeout(() => {
+                setVisibleCount(totalTypedCharacters);
+                setLineDone(true);
+                onComplete();
+            }, 0);
+            return () => clearTimeout(timer);
         }
 
         if (isCommand) {
             // Typing effect for the command line
-            if (visibleCount < totalCharacters) {
+            if (visibleCount < totalTypedCharacters) {
                 const isPause = Math.random() > 0.85;
                 const isFast = Math.random() > 0.5;
                 let delay = CHARACTER_DELAY_MS;
@@ -81,17 +89,17 @@ function TerminalLine({
             }, processingDelay);
             return () => clearTimeout(processTimer);
         }
-    }, [isActive, isComplete, visibleCount, totalCharacters, onComplete, isCommand, processingDelay]);
+    }, [isActive, isComplete, visibleCount, totalTypedCharacters, onComplete, isCommand, processingDelay]);
 
     if (!isActive && !isComplete) {
         return null;
     }
 
-    let currentIdx = 0;
+    let currentTypedIdx = 0;
     // Only show typing cursor if this line is actively being typed out
-    const showTypingCursor = isActive && isCommand && visibleCount < totalCharacters;
-    // Show final cursor if this line is marked to hold the cursor at the end
-    const showFinalCursor = cursor && (isComplete || lineDone);
+    const showTypingCursor = isActive && isCommand && visibleCount < totalTypedCharacters;
+    // Show final cursor if this line is marked to hold the cursor at the end (blinking while active and complete)
+    const showFinalCursor = cursor && (isActive || isComplete);
 
     return (
         <p className="terminal-boot-line">
@@ -100,8 +108,14 @@ function TerminalLine({
                 return (
                     <span className={segment.className} key={segIndex}>
                         {segmentChars.map((character, charIndex) => {
-                            const isVisible = isComplete || currentIdx < visibleCount;
-                            currentIdx++;
+                            const isVisible =
+                                isComplete ||
+                                segment.isPrompt ||
+                                currentTypedIdx < visibleCount;
+
+                            if (!segment.isPrompt) {
+                                currentTypedIdx++;
+                            }
 
                             if (!isVisible) return null;
 
@@ -145,8 +159,9 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
         {
             isCommand: true,
             segments: [
-                { text: "C:/Users/Caden/", className: "text-accent" },
-                { text: "> ", className: "text-text" },
+                { text: "C:/Users/Caden/", className: "text-accent hidden sm:inline", isPrompt: true },
+                { text: "~/", className: "text-accent sm:hidden", isPrompt: true },
+                { text: "> ", className: "text-text", isPrompt: true },
                 { text: "launch --orbital-interface" },
             ],
         },
@@ -216,6 +231,15 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
         return null;
     }
 
+    const handleSkip = () => {
+        if (isExiting) return;
+        setIsExiting(true);
+        window.setTimeout(() => {
+            sessionStorage.setItem(BOOT_SESSION_KEY, "true");
+            setIsVisible(false);
+        }, 600);
+    };
+
     return (
         <div
             aria-label="Initializing orbital navigation"
@@ -238,15 +262,8 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             
             <button
                 aria-label="Skip boot sequence"
-                className="mt-16 font-mono text-xs text-muted/40 transition-colors hover:text-text focus:outline-none focus:ring-1 focus:ring-accent"
-                onClick={() => {
-                    if (isExiting) return;
-                    setIsExiting(true);
-                    setTimeout(() => {
-                        setIsVisible(false);
-                        sessionStorage.setItem(BOOT_SESSION_KEY, "true");
-                    }, 600);
-                }}
+                className={`mt-16 font-mono text-xs text-muted/40 transition-colors hover:text-text focus:outline-none focus:ring-1 focus:ring-accent ${isExiting ? "pointer-events-none opacity-0" : ""}`}
+                onClick={handleSkip}
             >
                 [skip]
             </button>

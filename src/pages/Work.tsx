@@ -14,7 +14,7 @@ function Work() {
             <h1 className="my-6 max-w-4xl text-[clamp(3.5rem,8vw,8rem)] font-normal leading-[.92] tracking-[-.08em] text-text">
                 Things I&apos;ve
                 <br />
-                <span className="text-accent-blue">made.</span>
+                <span className="text-accent-blue">worked on.</span>
             </h1>
             <p className="mb-7 max-w-2xl text-lg leading-relaxed text-text sm:text-xl">
                 Software, data, and engineering projects shaped by a focus on useful outcomes.

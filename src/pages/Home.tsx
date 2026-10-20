@@ -2,7 +2,7 @@ import { useState, lazy, Suspense } from "react";
 import TerminalBoot from "../components/TerminalBoot";
 import type { DestinationId } from "../constants/destinations";
 
-const OrbitalScene = lazy(() => import("../components/OrbitalScene"));
+const OrbitalScene = lazy(() => import("../components/orbital/OrbitalScene"));
 const BOOT_SESSION_KEY = "caden-orbital-boot-seen";
 
 interface HomeProps {
