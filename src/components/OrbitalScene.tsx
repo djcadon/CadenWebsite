@@ -199,10 +199,38 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             for (let i = 0; i < count; i += 1) {
                 const position = i * 3;
                 const brightness = 0.3 + Math.random() * 0.7; // Made stars brighter overall
-                // Spread stars through a shallow box around the orbital plane.
-                starPositions[position] = (Math.random() - 0.5) * 42;
-                starPositions[position + 1] = (Math.random() - 0.5) * 24;
-                starPositions[position + 2] = (Math.random() - 0.5) * 42;
+                let x, y, z;
+                let inCylinder = false;
+                // Generate stars in a compact box to keep them dense.
+                // We construct a mathematical diagonal cylinder from the camera to the sun
+                // and ensure no stars spawn inside it to perfectly prevent overlaps.
+                do {
+                    x = (Math.random() - 0.5) * 45;
+                    y = (Math.random() - 0.5) * 28;
+                    z = (Math.random() - 0.5) * 45;
+                    
+                    // Sun is at (0, -10, 0), Camera is roughly at (0, 22, 18).
+                    // Vector V from Sun to Camera = (0, 32, 18). Length = ~36.715
+                    // Vector W from Sun to Star = (x, y + 10, z)
+                    
+                    // 1. Cross product V x W gives a vector whose length is proportional to distance from the line
+                    const crossX = 32 * z - 18 * (y + 10);
+                    const crossY = 18 * x;
+                    const crossZ = -32 * x;
+                    const crossMag = Math.sqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
+                    const distToLine = crossMag / 36.715;
+                    
+                    // 2. Dot product projection tells us if the star is IN FRONT of the sun
+                    // t goes from 0 (at the sun) to 1 (at the camera)
+                    const t = (32 * (y + 10) + 18 * z) / 1348;
+                    
+                    // Reject the star if it is within 5 units of the diagonal line AND in front of the sun
+                    inCylinder = distToLine < 5 && t > -0.1;
+                } while (inCylinder);
+
+                starPositions[position] = x;
+                starPositions[position + 1] = y;
+                starPositions[position + 2] = z;
                 starColors[position] = brightness;
                 starColors[position + 1] = brightness * 0.98;
                 starColors[position + 2] = brightness * 0.9;
@@ -437,11 +465,12 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             const { mesh, angle, distance } = returningPlanet;
             returningMesh = mesh;
             mesh.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+            mesh.updateWorldMatrix(true, false);
             const planetPosition = mesh.getWorldPosition(new THREE.Vector3());
-            const returnDirection = overviewPosition.clone().sub(planetPosition).normalize();
+            const initialDirection = overviewPosition.clone().sub(planetPosition).normalize();
             returnStartPosition = planetPosition
                 .clone()
-                .add(returnDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
+                .add(initialDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
             camera.position.copy(returnStartPosition);
             camera.lookAt(planetPosition);
             returning = true;
@@ -454,6 +483,8 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         const targetPosition = new THREE.Vector3();
         const zoomDirection = new THREE.Vector3();
         const endPosition = new THREE.Vector3();
+        const currentReturnStart = new THREE.Vector3();
+        const returnDirection = new THREE.Vector3();
         const updatePointer = (event: MouseEvent | PointerEvent) => {
             const bounds = renderer.domElement.getBoundingClientRect();
             pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
@@ -531,31 +562,8 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             const delta = Math.min((timestamp - previousTimestamp) / 1000, MAX_FRAME_DELTA_SECONDS);
             previousTimestamp = timestamp;
             elapsed += delta;
-            if (returning) {
-                const progress = Math.min(
-                    (elapsed - returnStartedAt) / RETURN_ZOOM_DURATION_SECONDS,
-                    1,
-                );
-                const easedProgress = 1 - (1 - progress) ** 3;
-                camera.position.lerpVectors(
-                    returnStartPosition as THREE.Vector3,
-                    overviewPosition,
-                    easedProgress,
-                );
-                if (returningMesh) {
-                    returningMesh.getWorldPosition(targetPosition);
-                    returnTargetPosition.lerpVectors(targetPosition, overviewTarget, easedProgress);
-                }
-                camera.lookAt(returnTargetPosition);
-                if (progress === 1) {
-                    returning = false;
-                    onReturnCompleteRef.current();
-                }
-            }
-            // We map over each planet to update its position along its orbital ring.
+            // 1. First update each planet's position along its orbital ring for the current frame
             planets.forEach(({ mesh, hitbox, angle, distance, speed }, index) => {
-                // Trigonometry (sine and cosine) is used to calculate the X and Z coordinates
-                // of the circular orbit based on the elapsed time and planet speed.
                 mesh.position.set(
                     Math.cos(angle + elapsed * speed) * distance,
                     0,
@@ -566,22 +574,50 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                 // AXIAL ROTATION:
                 // We give each planet a unique axial rotation speed (spinning on its own Y axis)
                 mesh.rotation.y = elapsed * (0.15 + (index * 0.2));
-                // We also add a tiny bit of off-axis tilt wobble (like Earth's 23.5 degree tilt).
-                // This makes the procedural noise patterns look fully 3D and dynamic as they spin.
+                // Off-axis tilt wobble so procedural noise patterns look dynamic
                 mesh.rotation.x = elapsed * (0.02 + (index * 0.03));
                 mesh.rotation.z = elapsed * (0.01 + (index * 0.01));
-                
-                // HTML TRACKING:
-                // We project the planet's 3D world position back into flat 2D screen coordinates
-                // so that we can perfectly overlay standard HTML text labels on top of the WebGL canvas.
-                const projected = mesh.getWorldPosition(projectedPosition).project(camera);
-                const label = labelRefs.current[mesh.userData.id];
-                if (label) {
-                    const x = (projected.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
-                    const y = (-projected.y * 0.5 + 0.5) * renderer.domElement.clientHeight;
-                    label.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-                }
             });
+
+            // 2. Camera transitions (return zoom-out or planet zoom-in)
+            if (returning) {
+                const progress = Math.min(
+                    (elapsed - returnStartedAt) / RETURN_ZOOM_DURATION_SECONDS,
+                    1,
+                );
+                // Smoothstep ease-in-out prevents the jarring start-velocity jump of cubic ease-out
+                const easedProgress = progress * progress * (3 - 2 * progress);
+
+                if (returningMesh) {
+                    returningMesh.getWorldPosition(targetPosition);
+                    // Dynamically calculate camera departure point so it tracks the moving planet
+                    returnDirection.copy(overviewPosition).sub(targetPosition).normalize();
+                    currentReturnStart
+                        .copy(targetPosition)
+                        .add(returnDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
+
+                    camera.position.lerpVectors(
+                        currentReturnStart,
+                        overviewPosition,
+                        easedProgress,
+                    );
+                    returnTargetPosition.lerpVectors(targetPosition, overviewTarget, easedProgress);
+                    camera.lookAt(returnTargetPosition);
+                } else if (returnStartPosition) {
+                    camera.position.lerpVectors(
+                        returnStartPosition,
+                        overviewPosition,
+                        easedProgress,
+                    );
+                    camera.lookAt(overviewTarget);
+                }
+
+                if (progress === 1) {
+                    returning = false;
+                    onReturnCompleteRef.current();
+                }
+            }
+
             // Interpolate the camera toward the selected planet using cubic easing,
             // then notify the parent once the transition has completed.
             if (zoomTarget) {
@@ -591,20 +627,36 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                 );
                 const easedProgress = 1 - (1 - progress) ** 3;
                 zoomTarget.getWorldPosition(targetPosition);
-                if (!zoomStartPosition || !zoomStartTarget) {
-                    return;
+                if (zoomStartPosition && zoomStartTarget) {
+                    zoomDirection.copy(zoomStartPosition).sub(zoomStartTarget).normalize();
+                    endPosition
+                        .copy(targetPosition)
+                        .add(zoomDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
+                    camera.position.lerpVectors(zoomStartPosition, endPosition, easedProgress);
+                    camera.lookAt(targetPosition);
                 }
-                zoomDirection.copy(zoomStartPosition).sub(zoomStartTarget).normalize();
-                endPosition
-                    .copy(targetPosition)
-                    .add(zoomDirection.multiplyScalar(PLANET_ZOOM_DISTANCE));
-                camera.position.lerpVectors(zoomStartPosition, endPosition, easedProgress);
-                camera.lookAt(targetPosition);
                 if (progress === 1 && !zoomFinished) {
                     zoomFinished = true;
                     onSelectRef.current(zoomTarget.userData.id);
                 }
             }
+
+            // 3. HTML label tracking projected onto screen coordinates after camera & planet updates
+            planets.forEach(({ mesh }) => {
+                const projected = mesh.getWorldPosition(projectedPosition).project(camera);
+                const label = labelRefs.current[mesh.userData.id];
+                if (label) {
+                    // Hide labels if the planet is behind the camera frustum near plane
+                    if (projected.z > 1) {
+                        label.style.display = "none";
+                    } else {
+                        label.style.display = "";
+                        const x = (projected.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
+                        const y = (-projected.y * 0.5 + 0.5) * renderer.domElement.clientHeight;
+                        label.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+                    }
+                }
+            });
             // STAR TWINKLE (Individual Shimmer)
             // Rather than animating an entire layer of stars at once, we tap directly into the 
             // WebGL buffer geometry. This allows us to modify the brightness of thousands of 

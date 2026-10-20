@@ -80,7 +80,7 @@ function Skills() {
                             operating systems, and hands-on troubleshooting.
                         </p>
                         <div className="mt-16 grid max-w-4xl gap-0 border-t border-line sm:grid-cols-2">
-                            {Object.entries(skillGroups).map(([title, skills], index) => (
+                            {Object.entries(skillGroups).map(([title, skills]) => (
                                 <motion.div
                                     className="border-b border-line py-6 sm:mr-8"
                                     key={title}
