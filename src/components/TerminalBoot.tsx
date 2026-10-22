@@ -170,7 +170,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             segments: [
                 {
                     text: "[ok]",
-                    className: "text-accent-green",
+                    className: "text-accent",
                     revealAfterComplete: true,
                 },
                 { text: " initializing orbital workspace..." },
@@ -181,7 +181,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             segments: [
                 {
                     text: "[ok]",
-                    className: "text-accent-green",
+                    className: "text-accent",
                     revealAfterComplete: true,
                 },
                 { text: " loading navigation system..." },
@@ -192,7 +192,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
             segments: [
                 {
                     text: "[ok]",
-                    className: "text-accent-green",
+                    className: "text-accent",
                     revealAfterComplete: true,
                 },
                 { text: " establishing visual link..." },
