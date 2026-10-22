@@ -36,6 +36,7 @@ function Contact() {
                     href="https://www.linkedin.com/in/cadenoleary/"
                     target="_blank"
                     rel="noreferrer"
+                    aria-label="LinkedIn profile (opens in a new tab)"
                 >
                     LinkedIn ↗
                 </a>
@@ -44,6 +45,7 @@ function Contact() {
                     href="https://github.com/djcadon"
                     target="_blank"
                     rel="noreferrer"
+                    aria-label="GitHub profile (opens in a new tab)"
                 >
                     GitHub ↗
                 </a>
@@ -52,6 +54,7 @@ function Contact() {
                     href="https://devpost.com/djcadon"
                     target="_blank"
                     rel="noreferrer"
+                    aria-label="Devpost profile (opens in a new tab)"
                 >
                     Devpost ↗
                 </a>

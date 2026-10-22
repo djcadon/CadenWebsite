@@ -26,10 +26,7 @@ function Home({
     );
 
     return (
-        <section
-            aria-hidden="true"
-            className="relative -mx-5 sm:-mx-11 h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden select-none [-webkit-touch-callout:none]"
-        >
+        <section className="relative -mx-5 sm:-mx-11 h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden select-none [-webkit-touch-callout:none]">
             <Suspense
                 fallback={
                     <div className="flex h-full w-full items-center justify-center">

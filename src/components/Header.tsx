@@ -83,7 +83,7 @@ function Header({ onHome }: HeaderProps) {
                     <a
                         // Treat the directory name like a terminal parent-directory
                         // link while keeping navigation inside the React app.
-                        aria-label="Return to home directory"
+                        aria-label="Return to orbital system"
                         className={`${getAccentClass(page)} no-underline transition-colors hover:text-text`}
                         href="/"
                         title="Return to orbital system"
