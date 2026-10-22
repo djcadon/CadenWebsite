@@ -177,7 +177,11 @@ function OrbitalScene({
         });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioLimit));
         renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.domElement.style.touchAction = "manipulation";
+        renderer.domElement.style.touchAction = "none";
+        renderer.domElement.style.userSelect = "none";
+        renderer.domElement.style.webkitUserSelect = "none";
+        (renderer.domElement.style as unknown as Record<string, string>)["-webkit-touch-callout"] =
+            "none";
         mount.appendChild(renderer.domElement);
 
         let performanceMonitor: ThreePerfInstance | null = null;
@@ -454,9 +458,16 @@ function OrbitalScene({
             raycaster.setFromCamera(pointer, camera);
             const hitSun = raycaster.intersectObject(sunHitbox).length > 0;
             if (hitSun) {
+                if (event.cancelable) {
+                    event.preventDefault();
+                }
                 // Immediately engage acceleration on mobile touch or mouse hold
                 isAccelerating = true;
             }
+        };
+
+        const handleContextMenu = (event: Event) => {
+            event.preventDefault();
         };
 
         const handlePointerUp = () => {
@@ -473,6 +484,7 @@ function OrbitalScene({
         renderer.domElement.addEventListener("pointerdown", handlePointerDown);
         window.addEventListener("pointerup", handlePointerUp);
         window.addEventListener("pointercancel", handlePointerUp);
+        renderer.domElement.addEventListener("contextmenu", handleContextMenu);
 
         // Responsive Resizing & Orientation Change
         const resize = () => {
@@ -758,6 +770,7 @@ function OrbitalScene({
             renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
             window.removeEventListener("pointerup", handlePointerUp);
             window.removeEventListener("pointercancel", handlePointerUp);
+            renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
 
             starTexture.dispose();
             resizeObserver.disconnect();
@@ -789,7 +802,7 @@ function OrbitalScene({
 
     return (
         <div
-            className="relative h-full w-full"
+            className="relative h-full w-full select-none [-webkit-touch-callout:none]"
             ref={mountRef}
             aria-label="Interactive orbital navigation"
             role="img"
@@ -856,12 +869,12 @@ function OrbitalScene({
                             labelRefs.current[destination.id] = element;
                         }}
                     >
-                        <div className="absolute left-1/2 top-6 -translate-x-1/2 whitespace-nowrap">
-                            <strong className="block text-sm uppercase tracking-[.14em] text-text sm:text-lg">
+                        <div className="absolute left-1/2 top-6 -translate-x-1/2 select-none whitespace-nowrap [-webkit-touch-callout:none]">
+                            <strong className="block select-none font-mono text-sm uppercase tracking-[.14em] text-text [-webkit-touch-callout:none] sm:text-lg">
                                 {destination.label}
                             </strong>
                             <span
-                                className="mt-1 block text-xs text-muted opacity-0 transition-opacity duration-200 sm:text-base"
+                                className="mt-1 block select-none text-xs text-muted opacity-0 transition-opacity duration-200 [-webkit-touch-callout:none] sm:text-base"
                                 ref={(element) => {
                                     descriptionRefs.current[destination.id] = element;
                                 }}
