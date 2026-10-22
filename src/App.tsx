@@ -43,6 +43,13 @@ function App() {
     // Scroll to top whenever the page state changes
     useEffect(() => {
         window.scrollTo(0, 0);
+        if (page === "blackhole") {
+            document.title = "EVENT HORIZON // Caden O'Leary";
+        } else if (page in pages) {
+            document.title = `${page.toUpperCase()} // Caden O'Leary`;
+        } else {
+            document.title = "ORBIT // Caden O'Leary";
+        }
     }, [page]);
 
     const navigate = (destination: string) => {
@@ -74,6 +81,7 @@ function App() {
             case "skills": return "glow-skills";
             case "about": return "glow-about";
             case "contact": return "glow-contact";
+            case "blackhole": return "glow-blackhole";
             default: return "glow-home";
         }
     };
@@ -146,6 +154,8 @@ function App() {
                             onSelect={navigate}
                             onReturnComplete={handleReturnComplete}
                             returnFrom={returnFrom}
+                            isBlackHole={page === "blackhole"}
+                            onEscapeBlackHole={() => navigate("home")}
                         />
                     </motion.div>
                 )}

@@ -15,6 +15,8 @@ interface OrbitalSceneProps {
     onSelect: (destination: string) => void;
     onReturnComplete: () => void;
     returnFrom?: DestinationId;
+    isBlackHole?: boolean;
+    onEscapeBlackHole?: () => void;
 }
 
 // =============================================================================
@@ -26,6 +28,16 @@ const CAMERA_NEAR_CLIP = 0.1;         // Near clipping frustum plane
 const CAMERA_FAR_CLIP = 100;          // Far clipping frustum plane
 const DESKTOP_CAMERA_POSITION = new THREE.Vector3(0, 22, 18); // Default desktop overview coordinates
 const MOBILE_CAMERA_POSITION = new THREE.Vector3(0, 20, 21);  // Pulled back for vertical smartphone viewports
+const BLACKHOLE_DESKTOP_CAMERA_POSITION = new THREE.Vector3(0, -6.8, 6.2); // Low-angle descent coordinates framing the accretion disk
+const BLACKHOLE_MOBILE_CAMERA_POSITION = new THREE.Vector3(0, -7.5, 7.2);  // Smartphone framing for event horizon
+
+// =============================================================================
+// BLACK HOLE CHOREOGRAPHY & GRAVITATIONAL ACCELERATION
+// Controls transition timing and cubic ease-in freefall acceleration curves.
+// =============================================================================
+const BLACKHOLE_DESCENT_DURATION_SECONDS = 4.2; // Slower, dramatic collapse & gravitational dive duration
+const BLACKHOLE_ESCAPE_DURATION_SECONDS = 2.0;  // Smooth thruster burn return duration
+const BLACKHOLE_CAMERA_ACCEL_POWER = 3.2;       // Exponent creating "slow at first, then faster" freefall
 
 // =============================================================================
 // RESPONSIVE MOBILE BREAKPOINTS & PERFORMANCE SCALING
@@ -54,15 +66,18 @@ const PLANET_ZOOM_DURATION_SECONDS = 1;   // Duration of zoom-in transition
 const RETURN_ZOOM_DURATION_SECONDS = 1.5; // Duration of zoom-out return animation
 
 // =============================================================================
-// TIME ACCELERATION & TELEMETRY EASTER EGG
-// Configures orbital speed boost on Spacebar hold and HUD telemetry position.
+// TIME ACCELERATION & TACHYON OVERDRIVE EASTER EGG
+// Configures orbital speed boost on Spacebar hold and collapse into black hole.
 // =============================================================================
-const TIME_ACCEL_TARGET_MULTIPLIER = 6.0;   // Peak orbital speed multiplier during Spacebar hold
-const TIME_ACCEL_LERP_FACTOR = 0.08;        // Smooth transition rate into acceleration
-const TIME_DECEL_LERP_FACTOR = 0.06;        // Smooth deceleration rate back to normal time
-const SUN_HUD_OFFSET_Y = 3.2;               // Local vertical offset above sun for telemetry HUD
+const TIME_ACCEL_STANDARD_MULTIPLIER = 6.0;   // Baseline time dilation speed
+const TIME_ACCEL_OVERDRIVE_MULTIPLIER = 10.0; // Tachyon overload peak speed
+const TIME_ACCEL_LERP_FACTOR = 0.08;          // Smooth transition rate into acceleration
+const TIME_DECEL_LERP_FACTOR = 0.06;          // Smooth deceleration rate back to normal time
+const OVERDRIVE_WARNING_SECONDS = 2.4;        // Continuous hold time before tachyon overload begins
+const OVERDRIVE_COLLAPSE_SECONDS = 4.4;       // Continuous hold time triggering gravitational collapse
+const SUN_HUD_OFFSET_Y = 3.2;                 // Local vertical offset above sun for telemetry HUD
 const STARLIGHT_STORAGE_KEY = "caden-starlight-captured";
-const STARLIGHT_TOAST_DURATION_MS = 2000;   // Duration spatial starlight badge remains visible
+const STARLIGHT_TOAST_DURATION_MS = 2000;     // Duration spatial starlight badge remains visible
 
 // =============================================================================
 // LIGHTING CONFIGURATION
@@ -75,7 +90,13 @@ const SUN_LIGHT_INTENSITY = 40;           // High-intensity central emission
 const SUN_LIGHT_DISTANCE = 45;            // Max radial falloff distance
 const SUN_LIGHT_DECAY = 2;                // Physically realistic quadratic attenuation
 
-function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalSceneProps) {
+function OrbitalScene({
+    onSelect,
+    onReturnComplete,
+    returnFrom,
+    isBlackHole = false,
+    onEscapeBlackHole,
+}: OrbitalSceneProps) {
     const mountRef = useRef<HTMLDivElement>(null);
     const labelRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const descriptionRefs = useRef<Record<string, HTMLSpanElement | null>>({});
@@ -83,11 +104,17 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
     const sunTelemetryTextRef = useRef<HTMLSpanElement>(null);
     const starlightBadgeRef = useRef<HTMLDivElement>(null);
     const starlightTextRef = useRef<HTMLSpanElement>(null);
+    const blackHoleHudRef = useRef<HTMLDivElement>(null);
+    const blackHoleStatusTextRef = useRef<HTMLSpanElement>(null);
     const [isZooming, setIsZooming] = useState(false);
+    const [blackHoleUIActive, setBlackHoleUIActive] = useState(false);
 
     const onSelectRef = useRef<(destination: string) => void>(onSelect);
     const onReturnCompleteRef = useRef(onReturnComplete);
     const returnFromRef = useRef(returnFrom);
+    const isBlackHoleRef = useRef(isBlackHole);
+    const onEscapeBlackHoleRef = useRef(onEscapeBlackHole);
+    const blackHoleUIActiveRef = useRef(false);
 
     useEffect(() => {
         onSelectRef.current = onSelect;
@@ -100,6 +127,22 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
     useEffect(() => {
         returnFromRef.current = returnFrom;
     }, [returnFrom]);
+
+    useEffect(() => {
+        isBlackHoleRef.current = isBlackHole;
+        if (isBlackHole) {
+            console.warn(
+                "%c[TELEMETRY] Proximity alert: Gravitational singularity reached. Time dilation infinite at r=2GM/c².",
+                "color: #f1bd78; font-family: monospace; font-size: 13px; font-weight: bold;",
+            );
+        } else {
+            blackHoleUIActiveRef.current = false;
+        }
+    }, [isBlackHole]);
+
+    useEffect(() => {
+        onEscapeBlackHoleRef.current = onEscapeBlackHole;
+    }, [onEscapeBlackHole]);
 
     useEffect(() => {
         const mount = mountRef.current;
@@ -185,8 +228,8 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             checkCatch,
             dispose: disposeShootingStar,
         } = createShootingStar(scene, starTexture);
-        const { sun, updateSun } = createSun(system, isMobile);
-        const { planets, planetHitboxes } = createPlanetSystem(system, isMobile, savedPlanetAngles);
+        const { sun, sunHitbox, updateSun, dispose: disposeSun } = createSun(system, isMobile);
+        const { planets, planetHitboxes, orbitLines } = createPlanetSystem(system, isMobile, savedPlanetAngles);
 
         // Return zoom state
         let returning = false;
@@ -314,6 +357,10 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                 return;
             }
 
+            if (isBlackHoleRef.current || currentBlackHoleProgress > 0.05) {
+                return;
+            }
+
             raycaster.setFromCamera(pointer, camera);
             const selected = raycaster.intersectObjects(planetHitboxes)[0]?.object as
                 THREE.Mesh | undefined;
@@ -351,6 +398,18 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         };
 
         const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape" || event.code === "Escape") {
+                if (isBlackHoleRef.current) {
+                    isBlackHoleRef.current = false;
+                    blackHoleUIActiveRef.current = false;
+                    if (blackHoleHudRef.current) {
+                        blackHoleHudRef.current.style.display = "none";
+                    }
+                    setBlackHoleUIActive(false);
+                    onEscapeBlackHoleRef.current?.();
+                    return;
+                }
+            }
             if (event.code === "Space" && !isEditableElement(document.activeElement)) {
                 if (!zoomTarget && !returning) {
                     event.preventDefault();
@@ -370,14 +429,13 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         };
 
         const handlePointerDown = (event: PointerEvent) => {
-            if (zoomTarget || returning) return;
+            if (zoomTarget || returning || isBlackHoleRef.current) return;
             updatePointer(event);
             raycaster.setFromCamera(pointer, camera);
-            const hitSun = raycaster.intersectObject(sun).length > 0;
+            const hitSun = raycaster.intersectObject(sunHitbox).length > 0;
             if (hitSun) {
-                sunHoldTimer = window.setTimeout(() => {
-                    isAccelerating = true;
-                }, 150);
+                // Immediately engage acceleration on mobile touch or mouse hold
+                isAccelerating = true;
             }
         };
 
@@ -426,6 +484,9 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
         let previousTimestamp = performance.now();
         let elapsed = 0;
         let frame: number | undefined;
+        let currentBlackHoleProgress = 0;
+        let accelHoldTime = 0;
+        let isTriggeringCollapse = false;
         const sunHudAnchor = new THREE.Vector3();
 
         const animate = (timestamp: number) => {
@@ -434,10 +495,66 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             previousTimestamp = timestamp;
             elapsed += delta;
 
-            // Smoothly lerp speed multiplier for time dilation easter egg
-            const targetMultiplier = isAccelerating && !zoomTarget && !returning
-                ? TIME_ACCEL_TARGET_MULTIPLIER
-                : 1.0;
+            // Black hole singularity state integration
+            const isBlackHoleActive = Boolean(isBlackHoleRef.current);
+            if (isBlackHoleActive) {
+                currentBlackHoleProgress = Math.min(
+                    1.0,
+                    currentBlackHoleProgress + delta / BLACKHOLE_DESCENT_DURATION_SECONDS,
+                );
+            } else {
+                currentBlackHoleProgress = Math.max(
+                    0.0,
+                    currentBlackHoleProgress - delta / BLACKHOLE_ESCAPE_DURATION_SECONDS,
+                );
+            }
+
+            const shouldShowBlackHoleUI =
+                isBlackHoleActive && currentBlackHoleProgress > 0.08;
+            if (shouldShowBlackHoleUI !== blackHoleUIActiveRef.current) {
+                blackHoleUIActiveRef.current = shouldShowBlackHoleUI;
+                setBlackHoleUIActive(shouldShowBlackHoleUI);
+            }
+
+            if (blackHoleStatusTextRef.current) {
+                blackHoleStatusTextRef.current.textContent =
+                    currentBlackHoleProgress >= 0.85
+                        ? "CRITICAL // EVENT HORIZON REACHED"
+                        : "SINGULARITY DETECTED // FREEFALL";
+            }
+
+            // Time acceleration & Tachyon Overdrive calculation
+            let targetMultiplier = 1.0;
+            if (isTriggeringCollapse) {
+                targetMultiplier = TIME_ACCEL_OVERDRIVE_MULTIPLIER;
+                // Once the black hole descent actually begins, release the trigger latch
+                if (currentBlackHoleProgress > 0.08) {
+                    isTriggeringCollapse = false;
+                }
+            } else if (isAccelerating && !zoomTarget && !returning && !isBlackHoleActive) {
+                accelHoldTime += delta;
+                if (accelHoldTime >= OVERDRIVE_COLLAPSE_SECONDS) {
+                    // Trigger black hole collapse!
+                    isTriggeringCollapse = true;
+                    accelHoldTime = 0;
+                    isAccelerating = false;
+                    onSelectRef.current("blackhole");
+                } else if (accelHoldTime >= OVERDRIVE_WARNING_SECONDS) {
+                    const overdriveProgress =
+                        (accelHoldTime - OVERDRIVE_WARNING_SECONDS) /
+                        (OVERDRIVE_COLLAPSE_SECONDS - OVERDRIVE_WARNING_SECONDS);
+                    targetMultiplier = THREE.MathUtils.lerp(
+                        TIME_ACCEL_STANDARD_MULTIPLIER,
+                        TIME_ACCEL_OVERDRIVE_MULTIPLIER,
+                        overdriveProgress,
+                    );
+                } else {
+                    targetMultiplier = TIME_ACCEL_STANDARD_MULTIPLIER;
+                }
+            } else {
+                accelHoldTime = 0;
+            }
+
             const lerpFactor = targetMultiplier > speedMultiplier
                 ? TIME_ACCEL_LERP_FACTOR
                 : TIME_DECEL_LERP_FACTOR;
@@ -448,10 +565,10 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
 
             orbitalElapsed += delta * speedMultiplier;
 
-            // 1. Update planets along their orbits
-            updatePlanets(planets, orbitalElapsed);
+            // 1. Update planets along their orbits (with black hole infall & orbit line fading)
+            updatePlanets(planets, orbitalElapsed, currentBlackHoleProgress, orbitLines);
 
-            // 2. Camera transitions (return zoom-out or planet zoom-in)
+            // 2. Camera transitions (return zoom-out, planet zoom-in, or black hole descent)
             if (returning) {
                 const progress = Math.min(
                     (elapsed - returnStartedAt) / RETURN_ZOOM_DURATION_SECONDS,
@@ -509,18 +626,38 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                 }
             }
 
+            if (!returning && !zoomTarget) {
+                if (currentBlackHoleProgress > 0) {
+                    const targetCamera = isMobile
+                        ? BLACKHOLE_MOBILE_CAMERA_POSITION
+                        : BLACKHOLE_DESKTOP_CAMERA_POSITION;
+
+                    // During descent: cubic ease-in freefall ("slow at first, then accelerating faster")
+                    // During escape: smoothstep thruster burn back into stable overview orbit
+                    const cameraProgress = isBlackHoleActive
+                        ? Math.pow(currentBlackHoleProgress, BLACKHOLE_CAMERA_ACCEL_POWER)
+                        : currentBlackHoleProgress *
+                          currentBlackHoleProgress *
+                          (3 - 2 * currentBlackHoleProgress);
+
+                    camera.position.lerpVectors(overviewPosition, targetCamera, cameraProgress);
+                    camera.lookAt(overviewTarget);
+                }
+            }
+
             // 3. HTML label tracking
             planets.forEach(({ mesh }) => {
                 const projected = mesh.getWorldPosition(projectedPosition).project(camera);
                 const label = labelRefs.current[mesh.userData.id];
                 if (label) {
-                    if (projected.z > 1) {
+                    if (projected.z > 1 || currentBlackHoleProgress > 0.6) {
                         label.style.display = "none";
                     } else {
                         label.style.display = "";
                         const x = (projected.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
                         const y = (-projected.y * 0.5 + 0.5) * renderer.domElement.clientHeight;
                         label.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+                        label.style.opacity = `${Math.max(0, 1 - currentBlackHoleProgress * 1.8)}`;
                     }
                 }
             });
@@ -528,13 +665,33 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
             // 4. Update visual sub-systems
             updateTwinkle(orbitalElapsed);
             updateShootingStar(delta);
-            updateSun(orbitalElapsed);
+
+            // The central star smoothly collapses over the first ~75% of the sequence
+            const shaderProgress = isBlackHoleActive
+                ? THREE.MathUtils.smoothstep(currentBlackHoleProgress, 0.0, 0.75)
+                : currentBlackHoleProgress;
+            updateSun(orbitalElapsed, shaderProgress);
 
             // 5. Update Sun Telemetry HUD readout
             if (sunTelemetryRef.current && sunTelemetryTextRef.current) {
-                if (speedMultiplier > 1.05) {
+                const showTelemetry =
+                    (speedMultiplier > 1.05 || isTriggeringCollapse) && currentBlackHoleProgress < 0.08;
+                if (showTelemetry) {
                     sunTelemetryRef.current.style.opacity = "1";
-                    sunTelemetryTextRef.current.textContent = `[TIME DILATION // ${speedMultiplier.toFixed(1)}X]`;
+
+                    let statusMessage = `[TIME DILATION // ${speedMultiplier.toFixed(1)}X]`;
+                    if (isTriggeringCollapse) {
+                        statusMessage = "[CRITICAL: MASS LIMIT REACHED // IMPLOSION]";
+                    } else if (accelHoldTime >= OVERDRIVE_WARNING_SECONDS) {
+                        const overdriveProgress =
+                            (accelHoldTime - OVERDRIVE_WARNING_SECONDS) /
+                            (OVERDRIVE_COLLAPSE_SECONDS - OVERDRIVE_WARNING_SECONDS);
+                        statusMessage =
+                            overdriveProgress >= 0.55
+                                ? "[CRITICAL: MASS LIMIT REACHED // IMPLOSION]"
+                                : `[TACHYON OVERLOAD // ${speedMultiplier.toFixed(1)}X]`;
+                    }
+                    sunTelemetryTextRef.current.textContent = statusMessage;
 
                     sunHudAnchor.set(0, SUN_HUD_OFFSET_Y, 0);
                     sun.localToWorld(sunHudAnchor);
@@ -571,6 +728,7 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                 window.clearTimeout(starlightFadeTimer);
             }
             disposeShootingStar();
+            disposeSun();
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
             window.removeEventListener("blur", handleWindowBlur);
@@ -638,6 +796,34 @@ function OrbitalScene({ onSelect, onReturnComplete, returnFrom }: OrbitalScenePr
                     <span ref={starlightTextRef}>[+1 STARLIGHT CAPTURED]</span>
                 </div>
             </div>
+            {/* Black Hole Event Horizon Warning & Abort Controls */}
+            {isBlackHole && blackHoleUIActive && (
+                <div
+                    ref={blackHoleHudRef}
+                    className="pointer-events-auto absolute inset-x-0 bottom-10 z-30 flex flex-col items-center justify-center gap-3 font-mono select-none"
+                    aria-live="polite"
+                >
+                    <div className="flex items-center gap-2 border border-accent/40 bg-bg/95 px-3.5 py-1.5 text-xs uppercase tracking-[.14em] text-accent shadow-lg backdrop-blur-xs">
+                        <span className="inline-block h-2 w-2 animate-ping rounded-full bg-accent" />
+                        <span ref={blackHoleStatusTextRef}>CRITICAL // EVENT HORIZON REACHED</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            isBlackHoleRef.current = false;
+                            blackHoleUIActiveRef.current = false;
+                            if (blackHoleHudRef.current) {
+                                blackHoleHudRef.current.style.display = "none";
+                            }
+                            setBlackHoleUIActive(false);
+                            onEscapeBlackHoleRef.current?.();
+                        }}
+                        className="cursor-pointer border border-line bg-bg/90 px-4 py-1.5 font-mono text-xs uppercase tracking-wider text-muted transition-colors hover:border-accent hover:text-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    >
+                        [← ESCAPE ORBIT // ESC]
+                    </button>
+                </div>
+            )}
             <div className="pointer-events-none absolute inset-0">
                 {destinations.map((destination) => (
                     <div

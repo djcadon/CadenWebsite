@@ -9,9 +9,17 @@ interface HomeProps {
     onSelect: (destination: string) => void;
     onReturnComplete: () => void;
     returnFrom?: DestinationId;
+    isBlackHole?: boolean;
+    onEscapeBlackHole?: () => void;
 }
 
-function Home({ onSelect, onReturnComplete, returnFrom }: HomeProps) {
+function Home({
+    onSelect,
+    onReturnComplete,
+    returnFrom,
+    isBlackHole = false,
+    onEscapeBlackHole,
+}: HomeProps) {
     // Home coordinates the scene with the terminal intro and page return zoom.
     const [isBooting, setIsBooting] = useState(
         () => sessionStorage.getItem(BOOT_SESSION_KEY) !== "true",
@@ -30,6 +38,8 @@ function Home({ onSelect, onReturnComplete, returnFrom }: HomeProps) {
                     onSelect={onSelect}
                     onReturnComplete={onReturnComplete}
                     returnFrom={returnFrom}
+                    isBlackHole={isBlackHole}
+                    onEscapeBlackHole={onEscapeBlackHole}
                 />
             </Suspense>
             {isBooting && <TerminalBoot onComplete={() => setIsBooting(false)} />}
