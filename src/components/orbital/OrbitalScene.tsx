@@ -23,72 +23,72 @@ interface OrbitalSceneProps {
 // CAMERA OVERVIEW & VIEWPORT PROJECTION
 // Defines default and responsive field-of-view, clipping planes, and positions.
 // =============================================================================
-const CAMERA_FOV = 40;                // Desktop field of view (degrees)
-const CAMERA_NEAR_CLIP = 0.1;         // Near clipping frustum plane
-const CAMERA_FAR_CLIP = 100;          // Far clipping frustum plane
+const CAMERA_FOV = 40; // Desktop field of view (degrees)
+const CAMERA_NEAR_CLIP = 0.1; // Near clipping frustum plane
+const CAMERA_FAR_CLIP = 100; // Far clipping frustum plane
 const DESKTOP_CAMERA_POSITION = new THREE.Vector3(0, 22, 18); // Default desktop overview coordinates
-const MOBILE_CAMERA_POSITION = new THREE.Vector3(0, 20, 21);  // Pulled back for vertical smartphone viewports
+const MOBILE_CAMERA_POSITION = new THREE.Vector3(0, 20, 21); // Pulled back for vertical smartphone viewports
 const BLACKHOLE_DESKTOP_CAMERA_POSITION = new THREE.Vector3(0, -6.8, 6.2); // Low-angle descent coordinates framing the accretion disk
-const BLACKHOLE_MOBILE_CAMERA_POSITION = new THREE.Vector3(0, -7.5, 7.2);  // Smartphone framing for event horizon
+const BLACKHOLE_MOBILE_CAMERA_POSITION = new THREE.Vector3(0, -7.5, 7.2); // Smartphone framing for event horizon
 
 // =============================================================================
 // BLACK HOLE CHOREOGRAPHY & GRAVITATIONAL ACCELERATION
 // Controls transition timing and cubic ease-in freefall acceleration curves.
 // =============================================================================
 const BLACKHOLE_DESCENT_DURATION_SECONDS = 4.2; // Slower, dramatic collapse & gravitational dive duration
-const BLACKHOLE_ESCAPE_DURATION_SECONDS = 2.0;  // Smooth thruster burn return duration
-const BLACKHOLE_CAMERA_ACCEL_POWER = 3.2;       // Exponent creating "slow at first, then faster" freefall
+const BLACKHOLE_ESCAPE_DURATION_SECONDS = 2.0; // Smooth thruster burn return duration
+const BLACKHOLE_CAMERA_ACCEL_POWER = 3.2; // Exponent creating "slow at first, then faster" freefall
 
 // =============================================================================
 // RESPONSIVE MOBILE BREAKPOINTS & PERFORMANCE SCALING
 // Downscales geometry and limits WebGL pixel ratios on mobile/low-power devices.
 // =============================================================================
-const MOBILE_BREAKPOINT = 640;        // Viewport width breakpoint in pixels
-const MOBILE_CAMERA_FOV = 46;         // Slightly wider FOV to frame planets comfortably on phones
-const MOBILE_SYSTEM_SCALE = 0.82;     // Overall solar system group scale multiplier on mobile
-const MAX_PIXEL_RATIO = 1.5;          // Desktop device pixel ratio cap to balance crispness & GPU load
-const MOBILE_PIXEL_RATIO = 1.25;      // Mobile/low-power pixel ratio cap to preserve battery & 60fps
+const MOBILE_BREAKPOINT = 640; // Viewport width breakpoint in pixels
+const MOBILE_CAMERA_FOV = 46; // Slightly wider FOV to frame planets comfortably on phones
+const MOBILE_SYSTEM_SCALE = 0.82; // Overall solar system group scale multiplier on mobile
+const MAX_PIXEL_RATIO = 1.5; // Desktop device pixel ratio cap to balance crispness & GPU load
+const MOBILE_PIXEL_RATIO = 1.25; // Mobile/low-power pixel ratio cap to preserve battery & 60fps
 
 // =============================================================================
 // SCENE ORIENTATION & TIMING
 // Sets the overall orbital plane tilt and delta time clamping.
 // =============================================================================
-const SYSTEM_TILT = 0.15;             // Slight pitch inclination for the entire solar system
-const ORBIT_VERTICAL_OFFSET = -10;    // Y-axis offset centering the solar system in the viewport
+const SYSTEM_TILT = 0.15; // Slight pitch inclination for the entire solar system
+const ORBIT_VERTICAL_OFFSET = -10; // Y-axis offset centering the solar system in the viewport
 const MAX_FRAME_DELTA_SECONDS = 0.05; // Maximum accumulated delta per frame (prevents tab-switch jump)
 
 // =============================================================================
 // CAMERA TRANSITIONS (ZOOM-IN & RETURN)
 // Durations and distances for navigating between overview and planet surfaces.
 // =============================================================================
-const PLANET_ZOOM_DISTANCE = 1.35;        // Distance camera stops in front of target planet
-const PLANET_ZOOM_DURATION_SECONDS = 1;   // Duration of zoom-in transition
+const PLANET_ZOOM_DISTANCE = 1.35; // Distance camera stops in front of target planet
+const PLANET_ZOOM_DURATION_SECONDS = 1; // Duration of zoom-in transition
 const RETURN_ZOOM_DURATION_SECONDS = 1.5; // Duration of zoom-out return animation
 
 // =============================================================================
 // TIME ACCELERATION & TACHYON OVERDRIVE EASTER EGG
 // Configures orbital speed boost on Spacebar hold and collapse into black hole.
 // =============================================================================
-const TIME_ACCEL_STANDARD_MULTIPLIER = 6.0;   // Baseline time dilation speed
+const TIME_ACCEL_STANDARD_MULTIPLIER = 6.0; // Baseline time dilation speed
 const TIME_ACCEL_OVERDRIVE_MULTIPLIER = 10.0; // Tachyon overload peak speed
-const TIME_ACCEL_LERP_FACTOR = 0.08;          // Smooth transition rate into acceleration
-const TIME_DECEL_LERP_FACTOR = 0.06;          // Smooth deceleration rate back to normal time
-const OVERDRIVE_WARNING_SECONDS = 2.4;        // Continuous hold time before tachyon overload begins
-const OVERDRIVE_COLLAPSE_SECONDS = 4.4;       // Continuous hold time triggering gravitational collapse
-const SUN_HUD_OFFSET_Y = 3.2;                 // Local vertical offset above sun for telemetry HUD
+const TIME_ACCEL_LERP_FACTOR = 0.08; // Smooth transition rate into acceleration
+const TIME_DECEL_LERP_FACTOR = 0.06; // Smooth deceleration rate back to normal time
+const OVERDRIVE_WARNING_SECONDS = 2.4; // Continuous hold time before tachyon overload begins
+const OVERDRIVE_COLLAPSE_SECONDS = 4.4; // Continuous hold time triggering gravitational collapse
+const SUN_HUD_OFFSET_Y = 3.2; // Local vertical offset above sun for telemetry HUD
 const STARLIGHT_STORAGE_KEY = "caden-starlight-captured";
-const STARLIGHT_TOAST_DURATION_MS = 2000;     // Duration spatial starlight badge remains visible
+const STARLIGHT_TOAST_DURATION_MS = 2000; // Duration spatial starlight badge remains visible
 
 // =============================================================================
 // LIGHTING CONFIGURATION
 // Configures soft ambient fill and the warm central point light emitted from the sun.
 // =============================================================================
-const AMBIENT_LIGHT_COLOR = 0x9da6b5;     // Cool ambient fill color
-const AMBIENT_LIGHT_INTENSITY = 0.2;      // Subtle fill intensity
-const SUN_LIGHT_COLOR = 0xffd39b;         // Warm incandescent sunlight color
-const SUN_LIGHT_INTENSITY = 40;           // High-intensity central emission
-const SUN_LIGHT_DISTANCE = 45;            // Max radial falloff distance
-const SUN_LIGHT_DECAY = 2;                // Physically realistic quadratic attenuation
+const AMBIENT_LIGHT_COLOR = 0x9da6b5; // Cool ambient fill color
+const AMBIENT_LIGHT_INTENSITY = 0.2; // Subtle fill intensity
+const SUN_LIGHT_COLOR = 0xffd39b; // Warm incandescent sunlight color
+const SUN_LIGHT_INTENSITY = 40; // High-intensity central emission
+const SUN_LIGHT_DISTANCE = 45; // Max radial falloff distance
+const SUN_LIGHT_DECAY = 2; // Physically realistic quadratic attenuation
 
 function OrbitalScene({
     onSelect,
@@ -166,7 +166,9 @@ function OrbitalScene({
         );
         camera.position.copy(isMobile ? MOBILE_CAMERA_POSITION : DESKTOP_CAMERA_POSITION);
         camera.lookAt(0, ORBIT_VERTICAL_OFFSET, 0);
-        const overviewPosition = (isMobile ? MOBILE_CAMERA_POSITION : DESKTOP_CAMERA_POSITION).clone();
+        const overviewPosition = (
+            isMobile ? MOBILE_CAMERA_POSITION : DESKTOP_CAMERA_POSITION
+        ).clone();
 
         // Renderer
         const renderer = new THREE.WebGLRenderer({
@@ -229,7 +231,11 @@ function OrbitalScene({
             dispose: disposeShootingStar,
         } = createShootingStar(scene, starTexture);
         const { sun, sunHitbox, updateSun, dispose: disposeSun } = createSun(system, isMobile);
-        const { planets, planetHitboxes, orbitLines } = createPlanetSystem(system, isMobile, savedPlanetAngles);
+        const { planets, planetHitboxes, orbitLines } = createPlanetSystem(
+            system,
+            isMobile,
+            savedPlanetAngles,
+        );
 
         // Return zoom state
         let returning = false;
@@ -332,7 +338,14 @@ function OrbitalScene({
             const bounds = renderer.domElement.getBoundingClientRect();
             const pixelX = event.clientX - bounds.left;
             const pixelY = event.clientY - bounds.top;
-            const catchResult = checkCatch(pixelX, pixelY, camera, bounds.width, bounds.height, false);
+            const catchResult = checkCatch(
+                pixelX,
+                pixelY,
+                camera,
+                bounds.width,
+                bounds.height,
+                false,
+            );
             if (catchResult.caught && catchResult.worldPosition) {
                 triggerStarlightCapture(catchResult.worldPosition);
             }
@@ -351,7 +364,14 @@ function OrbitalScene({
             const bounds = renderer.domElement.getBoundingClientRect();
             const pixelX = event.clientX - bounds.left;
             const pixelY = event.clientY - bounds.top;
-            const catchResult = checkCatch(pixelX, pixelY, camera, bounds.width, bounds.height, true);
+            const catchResult = checkCatch(
+                pixelX,
+                pixelY,
+                camera,
+                bounds.width,
+                bounds.height,
+                true,
+            );
             if (catchResult.caught && catchResult.worldPosition) {
                 triggerStarlightCapture(catchResult.worldPosition);
                 return;
@@ -467,7 +487,9 @@ function OrbitalScene({
 
             const currentIsMobile = width < MOBILE_BREAKPOINT;
             camera.fov = currentIsMobile ? MOBILE_CAMERA_FOV : CAMERA_FOV;
-            overviewPosition.copy(currentIsMobile ? MOBILE_CAMERA_POSITION : DESKTOP_CAMERA_POSITION);
+            overviewPosition.copy(
+                currentIsMobile ? MOBILE_CAMERA_POSITION : DESKTOP_CAMERA_POSITION,
+            );
             system.scale.setScalar(currentIsMobile ? MOBILE_SYSTEM_SCALE : 1);
             camera.updateProjectionMatrix();
 
@@ -509,8 +531,7 @@ function OrbitalScene({
                 );
             }
 
-            const shouldShowBlackHoleUI =
-                isBlackHoleActive && currentBlackHoleProgress > 0.08;
+            const shouldShowBlackHoleUI = isBlackHoleActive && currentBlackHoleProgress > 0.08;
             if (shouldShowBlackHoleUI !== blackHoleUIActiveRef.current) {
                 blackHoleUIActiveRef.current = shouldShowBlackHoleUI;
                 setBlackHoleUIActive(shouldShowBlackHoleUI);
@@ -555,9 +576,10 @@ function OrbitalScene({
                 accelHoldTime = 0;
             }
 
-            const lerpFactor = targetMultiplier > speedMultiplier
-                ? TIME_ACCEL_LERP_FACTOR
-                : TIME_DECEL_LERP_FACTOR;
+            const lerpFactor =
+                targetMultiplier > speedMultiplier
+                    ? TIME_ACCEL_LERP_FACTOR
+                    : TIME_DECEL_LERP_FACTOR;
             speedMultiplier = THREE.MathUtils.lerp(speedMultiplier, targetMultiplier, lerpFactor);
             if (!isAccelerating && Math.abs(speedMultiplier - 1.0) < 0.01) {
                 speedMultiplier = 1.0;
@@ -675,7 +697,8 @@ function OrbitalScene({
             // 5. Update Sun Telemetry HUD readout
             if (sunTelemetryRef.current && sunTelemetryTextRef.current) {
                 const showTelemetry =
-                    (speedMultiplier > 1.05 || isTriggeringCollapse) && currentBlackHoleProgress < 0.08;
+                    (speedMultiplier > 1.05 || isTriggeringCollapse) &&
+                    currentBlackHoleProgress < 0.08;
                 if (showTelemetry) {
                     sunTelemetryRef.current.style.opacity = "1";
 

@@ -11,20 +11,20 @@ export const PLANET_POSITION_STORAGE_KEY = "caden-orbital-planet-positions";
 // ORBITAL PATH GEOMETRY & INCLINATION
 // Defines the resolution and subtle off-axis tilt for each orbital ring.
 // =============================================================================
-const ORBIT_POINT_COUNT = 128;          // Line resolution for desktop orbit rings
-const MOBILE_ORBIT_POINT_COUNT = 96;    // Lower line segment count for mobile performance
-const ORBIT_INCLINATION_X_STEP = 0.08;  // Per-orbit stagger along the X axis
-const ORBIT_INCLINATION_Z_STEP = 0.04;  // Per-orbit stagger along the Z axis
-const ORBIT_LINE_COLOR = 0x555a61;      // Muted slate gray for orbital tracks
-const ORBIT_LINE_OPACITY = 0.4;         // Subtle line transparency
+const ORBIT_POINT_COUNT = 128; // Line resolution for desktop orbit rings
+const MOBILE_ORBIT_POINT_COUNT = 96; // Lower line segment count for mobile performance
+const ORBIT_INCLINATION_X_STEP = 0.08; // Per-orbit stagger along the X axis
+const ORBIT_INCLINATION_Z_STEP = 0.04; // Per-orbit stagger along the Z axis
+const ORBIT_LINE_COLOR = 0x555a61; // Muted slate gray for orbital tracks
+const ORBIT_LINE_OPACITY = 0.4; // Subtle line transparency
 
 // =============================================================================
 // PLANET MATERIAL & INTERACTION
 // PBR physics values and interactive raycast boundary multipliers.
 // =============================================================================
-const PLANET_ROUGHNESS = 0.72;             // Surface roughness for realistic light diffusion
-const PLANET_METALNESS = 0.05;             // Subtle metallic specular sheen
-const HITBOX_RADIUS_MULTIPLIER = 2;        // Multiplier expanding click/touch target size
+const PLANET_ROUGHNESS = 0.72; // Surface roughness for realistic light diffusion
+const PLANET_METALNESS = 0.05; // Subtle metallic specular sheen
+const HITBOX_RADIUS_MULTIPLIER = 2; // Multiplier expanding click/touch target size
 const DEFAULT_PLANET_ANGLE_SPACING = 1.55; // Radians between planets if no saved angles exist
 
 // =============================================================================
@@ -32,8 +32,8 @@ const DEFAULT_PLANET_ANGLE_SPACING = 1.55; // Radians between planets if no save
 // Configures each planet's unique spin and slight off-axis wobble to showcase
 // the procedural noise textures dynamically.
 // =============================================================================
-const BASE_AXIAL_SPEED = 0.15;   // Base Y-axis rotational velocity
-const AXIAL_SPEED_STEP = 0.2;    // Incremental rotation speed added per planet index
+const BASE_AXIAL_SPEED = 0.15; // Base Y-axis rotational velocity
+const AXIAL_SPEED_STEP = 0.2; // Incremental rotation speed added per planet index
 const TILT_WOBBLE_X_BASE = 0.02; // Subtle off-axis pitch oscillation base
 const TILT_WOBBLE_X_STEP = 0.03; // Pitch oscillation increment per index
 const TILT_WOBBLE_Z_BASE = 0.01; // Subtle off-axis roll oscillation base
@@ -43,10 +43,10 @@ const TILT_WOBBLE_Z_STEP = 0.01; // Roll oscillation increment per index
 // BLACK HOLE TIDAL DISRUPTION & SPIRAL INFALL
 // Tunings for planetary gravitational collapse, spiral spin, and scaling.
 // =============================================================================
-const INFALL_STAGGER_STEP = 0.1;    // Delay offset per planet index (inner to outer)
-const INFALL_PROGRESS_WINDOW = 0.55;// Normalized progress interval required for full collapse
-const INFALL_ACCEL_POWER = 2.8;     // Inward fall curve (slow at first, accelerating inward)
-const INFALL_SPIRAL_BASE = 12.0;    // Inward whirlpool orbital angular velocity boost
+const INFALL_STAGGER_STEP = 0.1; // Delay offset per planet index (inner to outer)
+const INFALL_PROGRESS_WINDOW = 0.55; // Normalized progress interval required for full collapse
+const INFALL_ACCEL_POWER = 2.8; // Inward fall curve (slow at first, accelerating inward)
+const INFALL_SPIRAL_BASE = 12.0; // Inward whirlpool orbital angular velocity boost
 
 export type Planet = {
     mesh: THREE.Mesh;
@@ -282,7 +282,8 @@ export function updatePlanets(
         const currentDistance = THREE.MathUtils.lerp(distance, 0, fallEased);
 
         // Conservation of angular momentum: whirlwind spiral boost as radius shrinks
-        const spiralAngularBoost = fallEased * (INFALL_SPIRAL_BASE + (destinations.length - index) * 4.0);
+        const spiralAngularBoost =
+            fallEased * (INFALL_SPIRAL_BASE + (destinations.length - index) * 4.0);
         const currentAngle = angle + elapsed * speed + spiralAngularBoost;
 
         mesh.position.set(

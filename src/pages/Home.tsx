@@ -26,14 +26,19 @@ function Home({
     );
 
     return (
-        <section aria-hidden="true" className="relative -mx-5 sm:-mx-11 h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden">
-            <Suspense fallback={
-                <div className="flex h-full w-full items-center justify-center">
-                    <span className="font-mono text-sm uppercase tracking-[.14em] text-muted">
-                        Loading Systems...
-                    </span>
-                </div>
-            }>
+        <section
+            aria-hidden="true"
+            className="relative -mx-5 sm:-mx-11 h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden"
+        >
+            <Suspense
+                fallback={
+                    <div className="flex h-full w-full items-center justify-center">
+                        <span className="font-mono text-sm uppercase tracking-[.14em] text-muted">
+                            Loading Systems...
+                        </span>
+                    </div>
+                }
+            >
                 <OrbitalScene
                     onSelect={onSelect}
                     onReturnComplete={onReturnComplete}

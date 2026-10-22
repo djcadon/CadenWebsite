@@ -1,6 +1,6 @@
 # Caden in Orbit
 
-Personal portfolio for Caden O'Leary, built as an interactive 3D solar system.  
+Personal portfolio for Caden O'Leary, built as an interactive 3D solar system.
 
 This repository contains the source code for my personal website. Rather than being a template for others to use, this codebase serves as a practical demonstration of my frontend development skills, 3D graphics integration, and user interface design.
 

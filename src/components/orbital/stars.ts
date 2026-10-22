@@ -21,11 +21,11 @@ const STAR_BOUNDS_Z = 45;
 // camera at (0, 22, 18) and the sun at (0, -10, 0), ensuring the sun is never
 // visually obstructed by foreground stars.
 // =============================================================================
-const SUN_CAMERA_DELTA_Y = 32;       // Difference in Y between camera (22) and sun (-10)
-const SUN_CAMERA_DELTA_Z = 18;       // Difference in Z between camera (18) and sun (0)
+const SUN_CAMERA_DELTA_Y = 32; // Difference in Y between camera (22) and sun (-10)
+const SUN_CAMERA_DELTA_Z = 18; // Difference in Z between camera (18) and sun (0)
 const SUN_CAMERA_DISTANCE_SQ = 1348; // 32^2 + 18^2 (squared length of the vector)
-const SUN_CAMERA_DISTANCE = 36.715;  // Math.sqrt(1348) (Euclidean length of the vector)
-const STAR_EXCLUSION_RADIUS = 5;     // Radius of the hollow cylinder cleared around the sightline
+const SUN_CAMERA_DISTANCE = 36.715; // Math.sqrt(1348) (Euclidean length of the vector)
+const STAR_EXCLUSION_RADIUS = 5; // Radius of the hollow cylinder cleared around the sightline
 
 // =============================================================================
 // SHOOTING STAR TUNING & CATCH MECHANICS
@@ -33,13 +33,13 @@ const STAR_EXCLUSION_RADIUS = 5;     // Radius of the hollow cylinder cleared ar
 // stars, as well as stardust burst physics when caught by hover or click.
 // =============================================================================
 const SHOOTING_STAR_TRIGGER_CHANCE = 0.003; // Probability per frame of spawning a shooting star
-const SHOOTING_STAR_SPEED = 0.95;           // Traversal speed (balanced so visitors can track & catch it)
-const SHOOTING_STAR_STRETCH_Z = 25;         // Z-axis mesh elongation factor to create the streak effect
-const SHOOTING_STAR_RADIUS = 0.08;          // Base sphere radius before stretching
-const BURST_PARTICLE_COUNT = 20;            // Spark count for starlight burst when caught
-const BURST_DURATION_SECONDS = 0.75;        // Lifespan of sparkling dust explosion
-const CATCH_RADIUS_HOVER_PX = 42;           // Screen-space proximity threshold for mouse hover catch
-const CATCH_RADIUS_CLICK_PX = 60;           // Expanded threshold for touch tap / click catch
+const SHOOTING_STAR_SPEED = 0.95; // Traversal speed (balanced so visitors can track & catch it)
+const SHOOTING_STAR_STRETCH_Z = 25; // Z-axis mesh elongation factor to create the streak effect
+const SHOOTING_STAR_RADIUS = 0.08; // Base sphere radius before stretching
+const BURST_PARTICLE_COUNT = 20; // Spark count for starlight burst when caught
+const BURST_DURATION_SECONDS = 0.75; // Lifespan of sparkling dust explosion
+const CATCH_RADIUS_HOVER_PX = 42; // Screen-space proximity threshold for mouse hover catch
+const CATCH_RADIUS_CLICK_PX = 60; // Expanded threshold for touch tap / click catch
 
 export function createStarTexture(): THREE.CanvasTexture {
     const starCanvas = document.createElement("canvas");
@@ -116,7 +116,9 @@ export function createStarField(
                 const crossMag = Math.sqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
                 const distToLine = crossMag / SUN_CAMERA_DISTANCE;
 
-                const t = (SUN_CAMERA_DELTA_Y * (y + 10) + SUN_CAMERA_DELTA_Z * z) / SUN_CAMERA_DISTANCE_SQ;
+                const t =
+                    (SUN_CAMERA_DELTA_Y * (y + 10) + SUN_CAMERA_DELTA_Z * z) /
+                    SUN_CAMERA_DISTANCE_SQ;
                 inCylinder = distToLine < STAR_EXCLUSION_RADIUS && t > -0.1;
             } while (inCylinder);
 
@@ -279,7 +281,11 @@ export function createShootingStar(
         // 2. Trajectory animation
         if (shootingStarProgress < 1) {
             shootingStarProgress += delta * SHOOTING_STAR_SPEED;
-            shootingStar.position.lerpVectors(shootingStarStart, shootingStarEnd, shootingStarProgress);
+            shootingStar.position.lerpVectors(
+                shootingStarStart,
+                shootingStarEnd,
+                shootingStarProgress,
+            );
             (shootingStar.material as THREE.MeshBasicMaterial).opacity = Math.sin(
                 shootingStarProgress * Math.PI,
             );

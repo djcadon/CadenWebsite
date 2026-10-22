@@ -23,7 +23,7 @@ function Contact() {
             >
                 olearycb@mail.uc.edu ↗
             </a>
-                        <a
+            <a
                 className="mt-10 block w-fit border border-accent-purple px-4 py-2 font-mono text-xs uppercase tracking-[.1em] text-accent-purple no-underline transition-colors hover:bg-accent-purple hover:text-[#101010] sm:text-sm"
                 href="/contact.vcf"
                 download="Caden_OLeary.vcf"

@@ -4,28 +4,28 @@ import * as THREE from "three";
 // SUN CORE GEOMETRY & ROTATION
 // Controls the physical scale and axial rotation rate of the central star.
 // =============================================================================
-const SUN_RADIUS = 1.5;            // Physical radius of the central sun mesh
-const SUN_ROTATION_SPEED = 0.1;    // Radians per second of axial rotation on the Y-axis
+const SUN_RADIUS = 1.5; // Physical radius of the central sun mesh
+const SUN_ROTATION_SPEED = 0.1; // Radians per second of axial rotation on the Y-axis
 
 // =============================================================================
 // ATMOSPHERIC HALO & PULSE DYNAMICS
 // Configures the glowing spherical shell surrounding the sun and its gentle
 // sine-wave pulsing animation.
 // =============================================================================
-const SUN_HALO_RADIUS = 1.75;                 // Base radius of the glowing atmospheric halo
-const SUN_HALO_COLOR = 0xf1bd78;              // Warm amber glow color
-const SUN_HALO_BASE_OPACITY = 0.08;           // Baseline transparency of the halo mesh
-const SUN_HALO_PULSE_SPEED = 1.5;             // Sine-wave frequency for the breathing effect
-const SUN_HALO_PULSE_SCALE_AMPLITUDE = 0.04;  // Peak geometric expansion (+/- 4% scale change)
-const SUN_HALO_PULSE_OPACITY_AMPLITUDE = 0.03;// Peak opacity fluctuation (+/- 3% transparency)
+const SUN_HALO_RADIUS = 1.75; // Base radius of the glowing atmospheric halo
+const SUN_HALO_COLOR = 0xf1bd78; // Warm amber glow color
+const SUN_HALO_BASE_OPACITY = 0.08; // Baseline transparency of the halo mesh
+const SUN_HALO_PULSE_SPEED = 1.5; // Sine-wave frequency for the breathing effect
+const SUN_HALO_PULSE_SCALE_AMPLITUDE = 0.04; // Peak geometric expansion (+/- 4% scale change)
+const SUN_HALO_PULSE_OPACITY_AMPLITUDE = 0.03; // Peak opacity fluctuation (+/- 3% transparency)
 
 // =============================================================================
 // BLACK HOLE & ACCRETION DISK CONFIGURATION
 // Dimensions, rotational velocity, and photon ring tuning for event horizon mode.
 // =============================================================================
-const ACCRETION_INNER_RADIUS = 1.7;           // Inner radius of the swirling relativistic matter ring
-const ACCRETION_OUTER_RADIUS = 4.2;           // Outer boundary of the glowing accretion disk
-const ACCRETION_ROTATION_SPEED = 0.35;        // Angular velocity of the accretion disk plasma filaments
+const ACCRETION_INNER_RADIUS = 1.7; // Inner radius of the swirling relativistic matter ring
+const ACCRETION_OUTER_RADIUS = 4.2; // Outer boundary of the glowing accretion disk
+const ACCRETION_ROTATION_SPEED = 0.35; // Angular velocity of the accretion disk plasma filaments
 
 export interface SunSystem {
     sun: THREE.Mesh;

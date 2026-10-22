@@ -41,9 +41,11 @@ function TerminalLine({
     );
     // If it is an output line (not a command), it instantly prints all characters
     const [visibleCount, setVisibleCount] = useState(
-        isComplete || !isCommand || (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches) 
-            ? totalTypedCharacters 
-            : 0
+        isComplete ||
+            !isCommand ||
+            (isActive && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+            ? totalTypedCharacters
+            : 0,
     );
     // Track when the line has finished its "processing" delay
     const [lineDone, setLineDone] = useState(isComplete);
@@ -66,7 +68,7 @@ function TerminalLine({
                 const isPause = Math.random() > 0.85;
                 const isFast = Math.random() > 0.5;
                 let delay = CHARACTER_DELAY_MS;
-                
+
                 if (isPause) delay += 100;
                 else if (isFast) delay -= 30;
 
@@ -89,7 +91,15 @@ function TerminalLine({
             }, processingDelay);
             return () => clearTimeout(processTimer);
         }
-    }, [isActive, isComplete, visibleCount, totalTypedCharacters, onComplete, isCommand, processingDelay]);
+    }, [
+        isActive,
+        isComplete,
+        visibleCount,
+        totalTypedCharacters,
+        onComplete,
+        isCommand,
+        processingDelay,
+    ]);
 
     if (!isActive && !isComplete) {
         return null;
@@ -109,9 +119,7 @@ function TerminalLine({
                     <span className={segment.className} key={segIndex}>
                         {segmentChars.map((character, charIndex) => {
                             const isVisible =
-                                isComplete ||
-                                segment.isPrompt ||
-                                currentTypedIdx < visibleCount;
+                                isComplete || segment.isPrompt || currentTypedIdx < visibleCount;
 
                             if (!segment.isPrompt) {
                                 currentTypedIdx++;
@@ -159,7 +167,11 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
         {
             isCommand: true,
             segments: [
-                { text: "C:/Users/Caden/", className: "text-accent hidden sm:inline", isPrompt: true },
+                {
+                    text: "C:/Users/Caden/",
+                    className: "text-accent hidden sm:inline",
+                    isPrompt: true,
+                },
                 { text: "~/", className: "text-accent sm:hidden", isPrompt: true },
                 { text: "> ", className: "text-text", isPrompt: true },
                 { text: "launch --orbital-interface" },
@@ -259,7 +271,7 @@ function TerminalBoot({ onComplete }: TerminalBootProps) {
                     />
                 ))}
             </div>
-            
+
             <button
                 aria-label="Skip boot sequence"
                 className={`mt-16 font-mono text-xs text-muted/40 transition-colors hover:text-text focus:outline-none focus:ring-1 focus:ring-accent ${isExiting ? "pointer-events-none opacity-0" : ""}`}

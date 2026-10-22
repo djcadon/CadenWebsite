@@ -76,35 +76,54 @@ function App() {
 
     const getGlowClass = (currentPage: string) => {
         switch (currentPage) {
-            case "work": return "glow-work";
-            case "archive": return "glow-archive";
-            case "skills": return "glow-skills";
-            case "about": return "glow-about";
-            case "contact": return "glow-contact";
-            case "blackhole": return "glow-blackhole";
-            default: return "glow-home";
+            case "work":
+                return "glow-work";
+            case "archive":
+                return "glow-archive";
+            case "skills":
+                return "glow-skills";
+            case "about":
+                return "glow-about";
+            case "contact":
+                return "glow-contact";
+            case "blackhole":
+                return "glow-blackhole";
+            default:
+                return "glow-home";
         }
     };
 
     const getAccentClass = (currentPage: string) => {
         switch (currentPage) {
-            case "work": return "text-accent-blue";
-            case "archive": return "text-accent-blue";
-            case "skills": return "text-accent-green";
-            case "about": return "text-accent-tan";
-            case "contact": return "text-accent-purple";
-            default: return "text-accent";
+            case "work":
+                return "text-accent-blue";
+            case "archive":
+                return "text-accent-blue";
+            case "skills":
+                return "text-accent-green";
+            case "about":
+                return "text-accent-tan";
+            case "contact":
+                return "text-accent-purple";
+            default:
+                return "text-accent";
         }
     };
 
     const getHoverAccentClass = (currentPage: string) => {
         switch (currentPage) {
-            case "work": return "hover:text-accent-blue";
-            case "archive": return "hover:text-accent-blue";
-            case "skills": return "hover:text-accent-green";
-            case "about": return "hover:text-accent-tan";
-            case "contact": return "hover:text-accent-purple";
-            default: return "hover:text-accent";
+            case "work":
+                return "hover:text-accent-blue";
+            case "archive":
+                return "hover:text-accent-blue";
+            case "skills":
+                return "hover:text-accent-green";
+            case "about":
+                return "hover:text-accent-tan";
+            case "contact":
+                return "hover:text-accent-purple";
+            default:
+                return "hover:text-accent";
         }
     };
 
