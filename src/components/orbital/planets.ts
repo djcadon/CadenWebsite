@@ -11,20 +11,20 @@ export const PLANET_POSITION_STORAGE_KEY = "caden-orbital-planet-positions";
 // ORBITAL PATH GEOMETRY & INCLINATION
 // Defines the resolution and subtle off-axis tilt for each orbital ring.
 // =============================================================================
-const ORBIT_POINT_COUNT = 128;          // Line resolution for desktop orbit rings
-const MOBILE_ORBIT_POINT_COUNT = 96;    // Lower line segment count for mobile performance
-const ORBIT_INCLINATION_X_STEP = 0.08;  // Per-orbit stagger along the X axis
-const ORBIT_INCLINATION_Z_STEP = 0.04;  // Per-orbit stagger along the Z axis
-const ORBIT_LINE_COLOR = 0x555a61;      // Muted slate gray for orbital tracks
-const ORBIT_LINE_OPACITY = 0.4;         // Subtle line transparency
+const ORBIT_POINT_COUNT = 128; // Line resolution for desktop orbit rings
+const MOBILE_ORBIT_POINT_COUNT = 96; // Lower line segment count for mobile performance
+const ORBIT_INCLINATION_X_STEP = 0.08; // Per-orbit stagger along the X axis
+const ORBIT_INCLINATION_Z_STEP = 0.04; // Per-orbit stagger along the Z axis
+const ORBIT_LINE_COLOR = 0x555a61; // Muted slate gray for orbital tracks
+const ORBIT_LINE_OPACITY = 0.4; // Subtle line transparency
 
 // =============================================================================
 // PLANET MATERIAL & INTERACTION
 // PBR physics values and interactive raycast boundary multipliers.
 // =============================================================================
-const PLANET_ROUGHNESS = 0.72;             // Surface roughness for realistic light diffusion
-const PLANET_METALNESS = 0.05;             // Subtle metallic specular sheen
-const HITBOX_RADIUS_MULTIPLIER = 2;        // Multiplier expanding click/touch target size
+const PLANET_ROUGHNESS = 0.72; // Surface roughness for realistic light diffusion
+const PLANET_METALNESS = 0.05; // Subtle metallic specular sheen
+const HITBOX_RADIUS_MULTIPLIER = 2; // Multiplier expanding click/touch target size
 const DEFAULT_PLANET_ANGLE_SPACING = 1.55; // Radians between planets if no saved angles exist
 
 // =============================================================================
@@ -32,12 +32,21 @@ const DEFAULT_PLANET_ANGLE_SPACING = 1.55; // Radians between planets if no save
 // Configures each planet's unique spin and slight off-axis wobble to showcase
 // the procedural noise textures dynamically.
 // =============================================================================
-const BASE_AXIAL_SPEED = 0.15;   // Base Y-axis rotational velocity
-const AXIAL_SPEED_STEP = 0.2;    // Incremental rotation speed added per planet index
+const BASE_AXIAL_SPEED = 0.15; // Base Y-axis rotational velocity
+const AXIAL_SPEED_STEP = 0.2; // Incremental rotation speed added per planet index
 const TILT_WOBBLE_X_BASE = 0.02; // Subtle off-axis pitch oscillation base
 const TILT_WOBBLE_X_STEP = 0.03; // Pitch oscillation increment per index
 const TILT_WOBBLE_Z_BASE = 0.01; // Subtle off-axis roll oscillation base
 const TILT_WOBBLE_Z_STEP = 0.01; // Roll oscillation increment per index
+
+// =============================================================================
+// BLACK HOLE TIDAL DISRUPTION & SPIRAL INFALL
+// Tunings for planetary gravitational collapse, spiral spin, and scaling.
+// =============================================================================
+const INFALL_STAGGER_STEP = 0.1; // Delay offset per planet index (inner to outer)
+const INFALL_PROGRESS_WINDOW = 0.55; // Normalized progress interval required for full collapse
+const INFALL_ACCEL_POWER = 2.8; // Inward fall curve (slow at first, accelerating inward)
+const INFALL_SPIRAL_BASE = 12.0; // Inward whirlpool orbital angular velocity boost
 
 export type Planet = {
     mesh: THREE.Mesh;
@@ -93,6 +102,7 @@ export function savePlanetAngles(planets: Planet[], elapsed: number): void {
 export interface PlanetSystem {
     planets: Planet[];
     planetHitboxes: THREE.Mesh[];
+    orbitLines: THREE.LineLoop[];
 }
 
 export function createPlanetSystem(
@@ -100,6 +110,7 @@ export function createPlanetSystem(
     isMobile: boolean,
     savedPlanetAngles: Partial<Record<DestinationId, number>>,
 ): PlanetSystem {
+    const orbitLines: THREE.LineLoop[] = [];
     const planets: Planet[] = destinations.map((destination, index) => {
         const orbitFrame = new THREE.Group();
         orbitFrame.rotation.x = (index - 1.5) * ORBIT_INCLINATION_X_STEP;
@@ -126,6 +137,7 @@ export function createPlanetSystem(
             }),
         );
         orbitFrame.add(orbit);
+        orbitLines.push(orbit);
 
         const planetFrame = new THREE.Group();
         planetFrame.rotation.copy(orbitFrame.rotation);
@@ -220,21 +232,74 @@ export function createPlanetSystem(
 
     const planetHitboxes = planets.map(({ hitbox }) => hitbox);
 
-    return { planets, planetHitboxes };
+    return { planets, planetHitboxes, orbitLines };
 }
 
-export function updatePlanets(planets: Planet[], elapsed: number): void {
+export function updatePlanets(
+    planets: Planet[],
+    elapsed: number,
+    blackHoleProgress = 0,
+    orbitLines: THREE.LineLoop[] = [],
+): void {
+    // 1. Fade orbit line loops as matter gets consumed by the singularity
+    if (orbitLines.length > 0) {
+        const lineOpacity = Math.max(0, (1 - blackHoleProgress * 1.8) * ORBIT_LINE_OPACITY);
+        orbitLines.forEach((line) => {
+            (line.material as THREE.LineBasicMaterial).opacity = lineOpacity;
+            line.visible = lineOpacity > 0.001;
+        });
+    }
+
     planets.forEach(({ mesh, hitbox, angle, distance, speed }, index) => {
-        mesh.position.set(
-            Math.cos(angle + elapsed * speed) * distance,
+        if (blackHoleProgress <= 0.0001) {
+            mesh.position.set(
+                Math.cos(angle + elapsed * speed) * distance,
+                0,
+                Math.sin(angle + elapsed * speed) * distance,
+            );
+            hitbox.position.copy(mesh.position);
+            mesh.scale.setScalar(1);
+
+            // Axial Rotation & Gyroscopic Wobble
+            mesh.rotation.y = elapsed * (BASE_AXIAL_SPEED + index * AXIAL_SPEED_STEP);
+            mesh.rotation.x = elapsed * (TILT_WOBBLE_X_BASE + index * TILT_WOBBLE_X_STEP);
+            mesh.rotation.z = elapsed * (TILT_WOBBLE_Z_BASE + index * TILT_WOBBLE_Z_STEP);
+            return;
+        }
+
+        // 2. Staggered infall: inner planets (Work, r=3.4) plunge first, outer planets (Contact, r=13.0) plunge last
+        const staggerStart = index * INFALL_STAGGER_STEP;
+        const planetProgress = THREE.MathUtils.clamp(
+            (blackHoleProgress - staggerStart) / INFALL_PROGRESS_WINDOW,
             0,
-            Math.sin(angle + elapsed * speed) * distance,
+            1,
+        );
+
+        // Cubic acceleration into the singularity
+        const fallEased = Math.pow(planetProgress, INFALL_ACCEL_POWER);
+
+        // Radial collapse towards center
+        const currentDistance = THREE.MathUtils.lerp(distance, 0, fallEased);
+
+        // Conservation of angular momentum: whirlwind spiral boost as radius shrinks
+        const spiralAngularBoost =
+            fallEased * (INFALL_SPIRAL_BASE + (destinations.length - index) * 4.0);
+        const currentAngle = angle + elapsed * speed + spiralAngularBoost;
+
+        mesh.position.set(
+            Math.cos(currentAngle) * currentDistance,
+            0,
+            Math.sin(currentAngle) * currentDistance,
         );
         hitbox.position.copy(mesh.position);
 
-        // Axial Rotation
-        mesh.rotation.y = elapsed * (BASE_AXIAL_SPEED + index * AXIAL_SPEED_STEP);
-        // Off-axis tilt wobble so patterns look dynamic
+        // Tidal disruption: planet shrinks to zero scale as it breaches the event horizon
+        const scaleFactor = Math.max(0, 1 - Math.pow(planetProgress, 3));
+        mesh.scale.setScalar(scaleFactor);
+
+        // Tidal spin acceleration
+        const spinBoost = 1 + fallEased * 8.0;
+        mesh.rotation.y = elapsed * (BASE_AXIAL_SPEED + index * AXIAL_SPEED_STEP) * spinBoost;
         mesh.rotation.x = elapsed * (TILT_WOBBLE_X_BASE + index * TILT_WOBBLE_X_STEP);
         mesh.rotation.z = elapsed * (TILT_WOBBLE_Z_BASE + index * TILT_WOBBLE_Z_STEP);
     });

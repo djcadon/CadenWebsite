@@ -21,20 +21,25 @@ const STAR_BOUNDS_Z = 45;
 // camera at (0, 22, 18) and the sun at (0, -10, 0), ensuring the sun is never
 // visually obstructed by foreground stars.
 // =============================================================================
-const SUN_CAMERA_DELTA_Y = 32;       // Difference in Y between camera (22) and sun (-10)
-const SUN_CAMERA_DELTA_Z = 18;       // Difference in Z between camera (18) and sun (0)
+const SUN_CAMERA_DELTA_Y = 32; // Difference in Y between camera (22) and sun (-10)
+const SUN_CAMERA_DELTA_Z = 18; // Difference in Z between camera (18) and sun (0)
 const SUN_CAMERA_DISTANCE_SQ = 1348; // 32^2 + 18^2 (squared length of the vector)
-const SUN_CAMERA_DISTANCE = 36.715;  // Math.sqrt(1348) (Euclidean length of the vector)
-const STAR_EXCLUSION_RADIUS = 5;     // Radius of the hollow cylinder cleared around the sightline
+const SUN_CAMERA_DISTANCE = 36.715; // Math.sqrt(1348) (Euclidean length of the vector)
+const STAR_EXCLUSION_RADIUS = 5; // Radius of the hollow cylinder cleared around the sightline
 
 // =============================================================================
-// SHOOTING STAR TUNING
-// Controls the frequency, velocity, and visual elongation of occasional shooting stars.
+// SHOOTING STAR TUNING & CATCH MECHANICS
+// Controls the frequency, velocity, and visual elongation of occasional shooting
+// stars, as well as stardust burst physics when caught by hover or click.
 // =============================================================================
 const SHOOTING_STAR_TRIGGER_CHANCE = 0.003; // Probability per frame of spawning a shooting star
-const SHOOTING_STAR_SPEED = 1.2;            // Linear traversal speed along its randomized trajectory
-const SHOOTING_STAR_STRETCH_Z = 25;         // Z-axis mesh elongation factor to create the streak effect
-const SHOOTING_STAR_RADIUS = 0.08;          // Base sphere radius before stretching
+const SHOOTING_STAR_SPEED = 0.95; // Traversal speed (balanced so visitors can track & catch it)
+const SHOOTING_STAR_STRETCH_Z = 25; // Z-axis mesh elongation factor to create the streak effect
+const SHOOTING_STAR_RADIUS = 0.08; // Base sphere radius before stretching
+const BURST_PARTICLE_COUNT = 20; // Spark count for starlight burst when caught
+const BURST_DURATION_SECONDS = 0.75; // Lifespan of sparkling dust explosion
+const CATCH_RADIUS_HOVER_PX = 42; // Screen-space proximity threshold for mouse hover catch
+const CATCH_RADIUS_CLICK_PX = 60; // Expanded threshold for touch tap / click catch
 
 export function createStarTexture(): THREE.CanvasTexture {
     const starCanvas = document.createElement("canvas");
@@ -111,7 +116,9 @@ export function createStarField(
                 const crossMag = Math.sqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
                 const distToLine = crossMag / SUN_CAMERA_DISTANCE;
 
-                const t = (SUN_CAMERA_DELTA_Y * (y + 10) + SUN_CAMERA_DELTA_Z * z) / SUN_CAMERA_DISTANCE_SQ;
+                const t =
+                    (SUN_CAMERA_DELTA_Y * (y + 10) + SUN_CAMERA_DELTA_Z * z) /
+                    SUN_CAMERA_DISTANCE_SQ;
                 inCylinder = distToLine < STAR_EXCLUSION_RADIUS && t > -0.1;
             } while (inCylinder);
 
@@ -163,12 +170,29 @@ export function createStarField(
     return { starClouds, starTexture, updateTwinkle };
 }
 
+export interface ShootingStarCatchResult {
+    caught: boolean;
+    worldPosition?: THREE.Vector3;
+}
+
 export interface ShootingStarSystem {
     shootingStar: THREE.Mesh;
     updateShootingStar: (delta: number) => void;
+    checkCatch: (
+        screenX: number,
+        screenY: number,
+        camera: THREE.Camera,
+        clientWidth: number,
+        clientHeight: number,
+        isClick?: boolean,
+    ) => ShootingStarCatchResult;
+    dispose: () => void;
 }
 
-export function createShootingStar(scene: THREE.Scene): ShootingStarSystem {
+export function createShootingStar(
+    scene: THREE.Scene,
+    starTexture: THREE.CanvasTexture,
+): ShootingStarSystem {
     const shootingStar = new THREE.Mesh(
         new THREE.SphereGeometry(SHOOTING_STAR_RADIUS, 8, 8),
         new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }),
@@ -176,11 +200,70 @@ export function createShootingStar(scene: THREE.Scene): ShootingStarSystem {
     shootingStar.scale.z = SHOOTING_STAR_STRETCH_Z;
     scene.add(shootingStar);
 
+    // Stardust burst particle system
+    const burstGeometry = new THREE.BufferGeometry();
+    const burstPositions = new Float32Array(BURST_PARTICLE_COUNT * 3);
+    const burstColors = new Float32Array(BURST_PARTICLE_COUNT * 3);
+    const burstVelocities: THREE.Vector3[] = Array.from(
+        { length: BURST_PARTICLE_COUNT },
+        () => new THREE.Vector3(),
+    );
+
+    for (let i = 0; i < BURST_PARTICLE_COUNT; i += 1) {
+        burstPositions[i * 3] = 0;
+        burstPositions[i * 3 + 1] = 0;
+        burstPositions[i * 3 + 2] = 0;
+
+        // Radiant warm starlight sparkles (gold/white/cyan)
+        burstColors[i * 3] = 1.0;
+        burstColors[i * 3 + 1] = 0.88 + Math.random() * 0.12;
+        burstColors[i * 3 + 2] = 0.65 + Math.random() * 0.35;
+    }
+
+    burstGeometry.setAttribute("position", new THREE.BufferAttribute(burstPositions, 3));
+    burstGeometry.setAttribute("color", new THREE.BufferAttribute(burstColors, 3));
+
+    const burstMaterial = new THREE.PointsMaterial({
+        size: 0.35,
+        map: starTexture,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+    });
+
+    const burstPoints = new THREE.Points(burstGeometry, burstMaterial);
+    scene.add(burstPoints);
+
+    let burstProgress = 1;
+
+    const triggerBurst = (position: THREE.Vector3) => {
+        burstProgress = 0;
+        burstPoints.position.copy(position);
+        for (let i = 0; i < BURST_PARTICLE_COUNT; i += 1) {
+            const phi = Math.random() * Math.PI * 2;
+            const theta = Math.random() * Math.PI;
+            const speed = 1.8 + Math.random() * 3.2;
+            burstVelocities[i].set(
+                Math.sin(theta) * Math.cos(phi) * speed,
+                Math.sin(theta) * Math.sin(phi) * speed,
+                Math.cos(theta) * speed,
+            );
+            burstPositions[i * 3] = 0;
+            burstPositions[i * 3 + 1] = 0;
+            burstPositions[i * 3 + 2] = 0;
+        }
+        burstGeometry.attributes.position.needsUpdate = true;
+        burstMaterial.opacity = 1;
+    };
+
     let shootingStarProgress = 1;
     const shootingStarStart = new THREE.Vector3();
     const shootingStarEnd = new THREE.Vector3();
+    const tempScreenPos = new THREE.Vector3();
 
     const updateShootingStar = (delta: number) => {
+        // 1. Spawning lifecycle
         if (shootingStarProgress >= 1 && Math.random() < SHOOTING_STAR_TRIGGER_CHANCE) {
             shootingStarProgress = 0;
             shootingStarStart.set(
@@ -194,14 +277,83 @@ export function createShootingStar(scene: THREE.Scene): ShootingStarSystem {
             shootingStar.position.copy(shootingStarStart);
             shootingStar.lookAt(shootingStarEnd);
         }
+
+        // 2. Trajectory animation
         if (shootingStarProgress < 1) {
             shootingStarProgress += delta * SHOOTING_STAR_SPEED;
-            shootingStar.position.lerpVectors(shootingStarStart, shootingStarEnd, shootingStarProgress);
+            shootingStar.position.lerpVectors(
+                shootingStarStart,
+                shootingStarEnd,
+                shootingStarProgress,
+            );
             (shootingStar.material as THREE.MeshBasicMaterial).opacity = Math.sin(
                 shootingStarProgress * Math.PI,
             );
         }
+
+        // 3. Stardust explosion simulation
+        if (burstProgress < 1) {
+            burstProgress += delta / BURST_DURATION_SECONDS;
+            burstMaterial.opacity = Math.max(0, 1 - burstProgress);
+
+            for (let i = 0; i < BURST_PARTICLE_COUNT; i += 1) {
+                burstPositions[i * 3] += burstVelocities[i].x * delta;
+                burstPositions[i * 3 + 1] += burstVelocities[i].y * delta;
+                burstPositions[i * 3 + 2] += burstVelocities[i].z * delta;
+            }
+            burstGeometry.attributes.position.needsUpdate = true;
+        }
     };
 
-    return { shootingStar, updateShootingStar };
+    const checkCatch = (
+        screenX: number,
+        screenY: number,
+        camera: THREE.Camera,
+        clientWidth: number,
+        clientHeight: number,
+        isClick = false,
+    ): ShootingStarCatchResult => {
+        // Can only catch while active and visibly glowing
+        if (shootingStarProgress <= 0.05 || shootingStarProgress >= 0.95) {
+            return { caught: false };
+        }
+
+        tempScreenPos.copy(shootingStar.position).project(camera);
+        if (tempScreenPos.z > 1) {
+            return { caught: false };
+        }
+
+        const starPixelX = (tempScreenPos.x * 0.5 + 0.5) * clientWidth;
+        const starPixelY = (-tempScreenPos.y * 0.5 + 0.5) * clientHeight;
+
+        const deltaX = screenX - starPixelX;
+        const deltaY = screenY - starPixelY;
+        const distanceSq = deltaX * deltaX + deltaY * deltaY;
+
+        const maxThreshold = isClick ? CATCH_RADIUS_CLICK_PX : CATCH_RADIUS_HOVER_PX;
+        if (distanceSq <= maxThreshold * maxThreshold) {
+            const worldPosition = shootingStar.position.clone();
+            triggerBurst(worldPosition);
+
+            // Despawn shooting star immediately
+            shootingStarProgress = 1;
+            (shootingStar.material as THREE.MeshBasicMaterial).opacity = 0;
+
+            return { caught: true, worldPosition };
+        }
+
+        return { caught: false };
+    };
+
+    const dispose = () => {
+        scene.remove(shootingStar);
+        shootingStar.geometry.dispose();
+        (shootingStar.material as THREE.Material).dispose();
+
+        scene.remove(burstPoints);
+        burstGeometry.dispose();
+        burstMaterial.dispose();
+    };
+
+    return { shootingStar, updateShootingStar, checkCatch, dispose };
 }

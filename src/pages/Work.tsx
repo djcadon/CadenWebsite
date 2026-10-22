@@ -128,7 +128,7 @@ function Work() {
                     </motion.article>
                 ))}
             </div>
-                        <a
+            <a
                 className="mt-14 inline-block border border-accent-blue px-6 py-3 font-mono text-sm uppercase tracking-[.1em] text-accent-blue no-underline transition-colors hover:bg-accent-blue hover:text-[#101010] sm:text-base"
                 href="#archive"
             >

@@ -13,17 +13,18 @@ const matchSkill = (skillName: string, tools: string[]) => {
         if (s === t) return true;
         // Word boundary match for exact tool name within the formatted skill name
         // (e.g. matching "React" inside "React / Next.js")
-        const toolRegex = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        const toolRegex = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
         if (toolRegex.test(s)) return true;
-        
+
         // Manual aliases for heavily editorialized terms in the skills list
         // that map to specific tools in the experiences list
-        if (s.includes('telemetry') && t.includes('sensor')) return true;
-        if (s.includes('laser') && t.includes('laser')) return true;
-        if (s.includes('hmi') && t.includes('hmi')) return true;
-        if (s.includes('malware') && t.includes('malware')) return true;
-        if (s.includes('llm') && (t.includes('openai') || t.includes('gemini') || t === 'ai')) return true;
-        if (s.includes('radio') && (t.includes('radio') || t.includes('sdr'))) return true;
+        if (s.includes("telemetry") && t.includes("sensor")) return true;
+        if (s.includes("laser") && t.includes("laser")) return true;
+        if (s.includes("hmi") && t.includes("hmi")) return true;
+        if (s.includes("malware") && t.includes("malware")) return true;
+        if (s.includes("llm") && (t.includes("openai") || t.includes("gemini") || t === "ai"))
+            return true;
+        if (s.includes("radio") && (t.includes("radio") || t.includes("sdr"))) return true;
         return false;
     });
 };

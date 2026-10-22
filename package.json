@@ -8,7 +8,8 @@
         "dev:host": "vite --host 0.0.0.0",
         "build": "vite build",
         "typecheck": "tsc --noEmit",
-        "lint": "eslint .",
+        "lint": "prettier --check . && eslint .",
+        "lint:fix": "prettier --write . && eslint --fix .",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "preview": "vite preview"

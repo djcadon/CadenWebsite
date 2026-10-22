@@ -4,16 +4,47 @@ import SkillWorkLayout from "../components/SkillWorkLayout";
 
 const skillGroups: Record<string, string[]> = {
     Languages: ["Python", "C++", "C#", "C", "JavaScript", "TypeScript", "Bash / PowerShell"],
-    "Frameworks & Libraries": ["React", "Next.js", "FastAPI", "Flask", ".NET", "Tailwind CSS", "Vite"],
-    "Databases & Data Engineering": ["SQL", "PostgreSQL", "SQLite", "Supabase", "LanceDB", "Power Query", "Excel / VBA"],
-    "DevOps & Core Tools": ["Docker", "Linux", "Microsoft Azure", "Git", "Vercel", "Oracle VirtualBox"],
-    "AI & ML": ["RAG", "vLLM", "Ollama", "FAISS", "Chainlit", "LLM APIs (OpenAI, Gemini)", "Hugging Face"],
+    "Frameworks & Libraries": [
+        "React",
+        "Next.js",
+        "FastAPI",
+        "Flask",
+        ".NET",
+        "Tailwind CSS",
+        "Vite",
+    ],
+    "Databases & Data Engineering": [
+        "SQL",
+        "PostgreSQL",
+        "SQLite",
+        "Supabase",
+        "LanceDB",
+        "Power Query",
+        "Excel / VBA",
+    ],
+    "DevOps & Core Tools": [
+        "Docker",
+        "Linux",
+        "Microsoft Azure",
+        "Git",
+        "Vercel",
+        "Oracle VirtualBox",
+    ],
+    "AI & ML": [
+        "RAG",
+        "vLLM",
+        "Ollama",
+        "FAISS",
+        "Chainlit",
+        "LLM APIs (OpenAI, Gemini)",
+        "Hugging Face",
+    ],
     Cybersecurity: [
         "Network Defense",
         "Incident Response",
         "Static & Dynamic Malware Analysis",
         "Wireshark",
-        "Nmap"
+        "Nmap",
     ],
     "Embedded Hardware": [
         "STM32 & ESP32",
@@ -60,7 +91,10 @@ function Skills() {
                         transition={{ duration: 0.3 }}
                         className="mt-6"
                     >
-                        <SkillWorkLayout skill={selectedSkill} onBack={() => setSelectedSkill(null)} />
+                        <SkillWorkLayout
+                            skill={selectedSkill}
+                            onBack={() => setSelectedSkill(null)}
+                        />
                     </motion.div>
                 ) : (
                     <motion.div
@@ -76,8 +110,8 @@ function Skills() {
                             <span className="text-accent-green">the beginning.</span>
                         </h1>
                         <p className="mb-7 max-w-2xl text-lg leading-relaxed text-text sm:text-xl">
-                            A practical technical foundation built through software development, data systems,
-                            operating systems, and hands-on troubleshooting.
+                            A practical technical foundation built through software development,
+                            data systems, operating systems, and hands-on troubleshooting.
                         </p>
                         <div className="mt-16 grid max-w-4xl gap-0 border-t border-line sm:grid-cols-2">
                             {Object.entries(skillGroups).map(([title, skills]) => (
@@ -93,15 +127,17 @@ function Skills() {
                                         {title}
                                     </p>
                                     <div className="mt-3 flex flex-wrap gap-2">
-                                        {[...skills].sort((a, b) => a.localeCompare(b)).map((skill) => (
-                                            <button
-                                                key={skill}
-                                                onClick={() => setSelectedSkill(skill)}
-                                                className="cursor-pointer border border-line bg-transparent px-3 py-1 font-mono text-xs text-text transition-colors hover:border-accent-green hover:text-accent-green sm:text-sm"
-                                            >
-                                                {skill}
-                                            </button>
-                                        ))}
+                                        {[...skills]
+                                            .sort((a, b) => a.localeCompare(b))
+                                            .map((skill) => (
+                                                <button
+                                                    key={skill}
+                                                    onClick={() => setSelectedSkill(skill)}
+                                                    className="cursor-pointer border border-line bg-transparent px-3 py-1 font-mono text-xs text-text transition-colors hover:border-accent-green hover:text-accent-green sm:text-sm"
+                                                >
+                                                    {skill}
+                                                </button>
+                                            ))}
                                     </div>
                                 </motion.div>
                             ))}

@@ -80,7 +80,17 @@ export const work: Experience[] = [
                     end: "2025-09-01",
                     label: "May 2024 — Sep 2025",
                 },
-                tools: ["Raspberry Pi", "SQL", "Python", "Flask", "OPC UA", "Kepware", "MQTT", "Injection Molding", "Bash"],
+                tools: [
+                    "Raspberry Pi",
+                    "SQL",
+                    "Python",
+                    "Flask",
+                    "OPC UA",
+                    "Kepware",
+                    "MQTT",
+                    "Injection Molding",
+                    "Bash",
+                ],
                 description: [
                     "Deployed a Raspberry Pi data-acquisition system to extract real-time telemetry via OPC UA from a fleet of 40 Sumitomo, Toyo, and Niigata injection molding machines.",
                     "Centralized shop-floor data aggregation using Python and Flask, phasing out legacy manual reporting processes.",
