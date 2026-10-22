@@ -132,6 +132,8 @@ function Skills() {
                                             .map((skill) => (
                                                 <button
                                                     key={skill}
+                                                    type="button"
+                                                    aria-label={`View experiences using ${skill}`}
                                                     onClick={() => setSelectedSkill(skill)}
                                                     className="cursor-pointer border border-line bg-transparent px-3 py-1 font-mono text-xs text-text transition-colors hover:border-accent-green hover:text-accent-green sm:text-sm"
                                                 >

@@ -74,6 +74,7 @@ function Archive() {
                                                             href={role.repoUrl}
                                                             target="_blank"
                                                             rel="noreferrer"
+                                                            aria-label={`View code for ${role.title} on GitHub (opens in a new tab)`}
                                                             className="text-accent-blue no-underline transition-colors hover:text-text"
                                                         >
                                                             View Code →
@@ -84,6 +85,7 @@ function Archive() {
                                                             href={role.liveUrl}
                                                             target="_blank"
                                                             rel="noreferrer"
+                                                            aria-label={`Live demo for ${role.title} (opens in a new tab)`}
                                                             className="text-accent-blue no-underline transition-colors hover:text-text"
                                                         >
                                                             Live Demo →
@@ -94,6 +96,7 @@ function Archive() {
                                                             href={role.devpostUrl}
                                                             target="_blank"
                                                             rel="noreferrer"
+                                                            aria-label={`View Devpost for ${role.title} (opens in a new tab)`}
                                                             className="text-accent-blue no-underline transition-colors hover:text-text"
                                                         >
                                                             View Devpost →
