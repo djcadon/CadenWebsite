@@ -4,6 +4,7 @@ import type { ThreePerf as ThreePerfInstance } from "three-perf";
 import { destinations, type DestinationId } from "../../constants/destinations";
 import { createStarField, createShootingStar } from "./stars";
 import { createSun } from "./sun";
+import { createSyzygy } from "./syzygy";
 import {
     createPlanetSystem,
     updatePlanets,
@@ -240,6 +241,7 @@ function OrbitalScene({
             isMobile,
             savedPlanetAngles,
         );
+        const { updateSyzygy, dispose: disposeSyzygy } = createSyzygy(system, isMobile);
 
         // Return zoom state
         let returning = false;
@@ -521,6 +523,8 @@ function OrbitalScene({
         let currentBlackHoleProgress = 0;
         let accelHoldTime = 0;
         let isTriggeringCollapse = false;
+        let syzygyPauseRemaining = 0;
+        let syzygyPauseTriggered = false;
         const sunHudAnchor = new THREE.Vector3();
 
         const animate = (timestamp: number) => {
@@ -597,7 +601,11 @@ function OrbitalScene({
                 speedMultiplier = 1.0;
             }
 
-            orbitalElapsed += delta * speedMultiplier;
+            if (syzygyPauseRemaining > 0) {
+                syzygyPauseRemaining = Math.max(0, syzygyPauseRemaining - delta);
+            } else {
+                orbitalElapsed += delta * speedMultiplier;
+            }
 
             // 1. Update planets along their orbits (with black hole infall & orbit line fading)
             updatePlanets(planets, orbitalElapsed, currentBlackHoleProgress, orbitLines);
@@ -699,6 +707,15 @@ function OrbitalScene({
             // 4. Update visual sub-systems
             updateTwinkle(orbitalElapsed);
             updateShootingStar(delta);
+            const syzygyState = updateSyzygy(planets, delta, orbitalElapsed, isBlackHoleActive);
+
+            // Pause the system for 3 seconds upon achieving full planetary alignment
+            if (syzygyState.isFullyAligned && !syzygyPauseTriggered && !isBlackHoleActive) {
+                syzygyPauseTriggered = true;
+                syzygyPauseRemaining = 3.0;
+            } else if (!syzygyState.isSyzygy) {
+                syzygyPauseTriggered = false;
+            }
 
             // The central star smoothly collapses over the first ~75% of the sequence
             const shaderProgress = isBlackHoleActive
@@ -709,7 +726,10 @@ function OrbitalScene({
             // 5. Update Sun Telemetry HUD readout
             if (sunTelemetryRef.current && sunTelemetryTextRef.current) {
                 const showTelemetry =
-                    (speedMultiplier > 1.05 || isTriggeringCollapse) &&
+                    (speedMultiplier > 1.05 ||
+                        isTriggeringCollapse ||
+                        syzygyState.isSyzygy ||
+                        syzygyPauseRemaining > 0) &&
                     currentBlackHoleProgress < 0.08;
                 if (showTelemetry) {
                     sunTelemetryRef.current.style.opacity = "1";
@@ -725,6 +745,20 @@ function OrbitalScene({
                             overdriveProgress >= 0.55
                                 ? "[CRITICAL: MASS LIMIT REACHED // IMPLOSION]"
                                 : `[TACHYON OVERLOAD // ${speedMultiplier.toFixed(1)}X]`;
+                    } else if (syzygyPauseRemaining > 0) {
+                        const secondsLeft = Math.max(1, Math.ceil(syzygyPauseRemaining));
+                        statusMessage = `[ORBITAL SYZYGY // GRAVITATIONAL LOCK: ${secondsLeft}S]`;
+                    } else if (syzygyState.intensity >= 0.65) {
+                        statusMessage =
+                            speedMultiplier > 1.05
+                                ? `[ORBITAL SYZYGY // GRAVITATIONAL RESONANCE // ${speedMultiplier.toFixed(1)}X]`
+                                : "[ORBITAL SYZYGY // GRAVITATIONAL RESONANCE]";
+                    } else if (syzygyState.isSyzygy) {
+                        const alignmentPct = Math.round(syzygyState.alignmentScore * 100);
+                        statusMessage =
+                            speedMultiplier > 1.05
+                                ? `[HARMONIC SYZYGY // ALIGNMENT: ${alignmentPct}% // ${speedMultiplier.toFixed(1)}X]`
+                                : `[HARMONIC SYZYGY // ALIGNMENT: ${alignmentPct}%]`;
                     }
                     sunTelemetryTextRef.current.textContent = statusMessage;
 
@@ -764,6 +798,7 @@ function OrbitalScene({
             }
             disposeShootingStar();
             disposeSun();
+            disposeSyzygy();
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
             window.removeEventListener("blur", handleWindowBlur);
