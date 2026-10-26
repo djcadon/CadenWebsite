@@ -7,6 +7,7 @@ import Header from "./components/Header";
 import Home from "./pages/Home";
 import Skills from "./pages/Skills";
 import Work from "./pages/Work";
+import CommandTerminal from "./components/CommandTerminal";
 import type { DestinationId } from "./constants/destinations";
 
 const pages = {
@@ -25,7 +26,35 @@ function App() {
     const [page, setPage] = useState(window.location.hash.slice(1));
     // Preserve the page's planet so returning home can animate from that orbit.
     const [returnFrom, setReturnFrom] = useState<DestinationId | undefined>();
+    const [isTerminalOpen, setIsTerminalOpen] = useState(false);
     const Page = pages[page as PageId];
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "`" || e.key === "~") {
+                // When terminal is open, do not close it on ` or ~ (allows typing ~ into terminal, and only Escape closes)
+                if (isTerminalOpen) return;
+
+                const target = e.target as HTMLElement | null;
+                const isFormInput =
+                    target &&
+                    (target.tagName === "INPUT" ||
+                        target.tagName === "TEXTAREA" ||
+                        target.isContentEditable);
+
+                if (isFormInput) return;
+
+                e.preventDefault();
+                setIsTerminalOpen(true);
+            } else if (e.key === "Escape" && isTerminalOpen) {
+                e.preventDefault();
+                setIsTerminalOpen(false);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isTerminalOpen]);
 
     useEffect(() => {
         const handleNavigation = () => {
@@ -129,7 +158,15 @@ function App() {
 
     return (
         <main className={`mx-auto min-h-dvh w-full px-5 text-text sm:px-11 ${getGlowClass(page)}`}>
-            <Header onHome={() => navigate("home")} />
+            <Header
+                onHome={() => navigate("home")}
+                onToggleTerminal={() => setIsTerminalOpen((prev) => !prev)}
+            />
+            <CommandTerminal
+                isOpen={isTerminalOpen}
+                onClose={() => setIsTerminalOpen(false)}
+                onNavigate={navigate}
+            />
             <AnimatePresence mode="wait">
                 {Page ? (
                     <motion.div

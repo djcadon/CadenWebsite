@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 
 interface HeaderProps {
     onHome: () => void;
+    onToggleTerminal?: () => void;
 }
 
-function Header({ onHome }: HeaderProps) {
+function Header({ onHome, onToggleTerminal }: HeaderProps) {
     const [page, setPage] = useState(window.location.hash.slice(1) || "home");
     const navigation = [
         {
@@ -113,7 +114,19 @@ function Header({ onHome }: HeaderProps) {
                     </a>
                 ))}
             </nav>
-            <span className="ml-6 hidden items-center gap-2 text-muted sm:flex">
+            {onToggleTerminal && (
+                <button
+                    type="button"
+                    onClick={onToggleTerminal}
+                    aria-label="Toggle mission command terminal"
+                    title="Toggle Mission Terminal (Press ` or ~)"
+                    className="ml-2 sm:ml-4 flex items-center gap-1 rounded border border-line bg-surface/40 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-muted transition-colors hover:border-accent hover:text-accent cursor-pointer"
+                >
+                    <span className="text-accent">~</span>
+                    <span className="hidden sm:inline opacity-70">cli</span>
+                </button>
+            )}
+            <span className="ml-3 sm:ml-6 hidden items-center gap-2 text-muted sm:flex">
                 <i className="h-1.5 w-1.5 rounded-full bg-accent-green" /> online
             </span>
         </header>

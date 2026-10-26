@@ -5,6 +5,7 @@ import { destinations, type DestinationId } from "../../constants/destinations";
 import { createStarField, createShootingStar } from "./stars";
 import { createSun } from "./sun";
 import { createSyzygy } from "./syzygy";
+import { registerMissionDeck } from "../../hooks/useCommands";
 import {
     createPlanetSystem,
     updatePlanets,
@@ -525,6 +526,8 @@ function OrbitalScene({
         let isTriggeringCollapse = false;
         let syzygyPauseRemaining = 0;
         let syzygyPauseTriggered = false;
+        let consoleWarpMultiplier: number | null = null;
+        let latestSyzygyAlignment = 0;
         const sunHudAnchor = new THREE.Vector3();
 
         const animate = (timestamp: number) => {
@@ -545,6 +548,16 @@ function OrbitalScene({
                     0.0,
                     currentBlackHoleProgress - delta / BLACKHOLE_ESCAPE_DURATION_SECONDS,
                 );
+            }
+
+            const isBlackHoleTransitioning = currentBlackHoleProgress > 0.0001;
+            const isBlackHoleMode =
+                isBlackHoleActive || isBlackHoleTransitioning || isTriggeringCollapse;
+
+            // Immediately abort any syzygy pause if the black hole singularity is active or transitioning
+            if (isBlackHoleMode) {
+                syzygyPauseRemaining = 0;
+                syzygyPauseTriggered = false;
             }
 
             const shouldShowBlackHoleUI = isBlackHoleActive && currentBlackHoleProgress > 0.08;
@@ -588,6 +601,13 @@ function OrbitalScene({
                 } else {
                     targetMultiplier = TIME_ACCEL_STANDARD_MULTIPLIER;
                 }
+            } else if (
+                consoleWarpMultiplier !== null &&
+                !zoomTarget &&
+                !returning &&
+                !isBlackHoleActive
+            ) {
+                targetMultiplier = consoleWarpMultiplier;
             } else {
                 accelHoldTime = 0;
             }
@@ -597,7 +617,11 @@ function OrbitalScene({
                     ? TIME_ACCEL_LERP_FACTOR
                     : TIME_DECEL_LERP_FACTOR;
             speedMultiplier = THREE.MathUtils.lerp(speedMultiplier, targetMultiplier, lerpFactor);
-            if (!isAccelerating && Math.abs(speedMultiplier - 1.0) < 0.01) {
+            if (
+                !isAccelerating &&
+                consoleWarpMultiplier === null &&
+                Math.abs(speedMultiplier - 1.0) < 0.01
+            ) {
                 speedMultiplier = 1.0;
             }
 
@@ -707,10 +731,11 @@ function OrbitalScene({
             // 4. Update visual sub-systems
             updateTwinkle(orbitalElapsed);
             updateShootingStar(delta);
-            const syzygyState = updateSyzygy(planets, delta, orbitalElapsed, isBlackHoleActive);
+            const syzygyState = updateSyzygy(planets, delta, orbitalElapsed, isBlackHoleMode);
+            latestSyzygyAlignment = syzygyState.alignmentScore;
 
             // Pause the system for 3 seconds upon achieving full planetary alignment
-            if (syzygyState.isFullyAligned && !syzygyPauseTriggered && !isBlackHoleActive) {
+            if (syzygyState.isFullyAligned && !syzygyPauseTriggered && !isBlackHoleMode) {
                 syzygyPauseTriggered = true;
                 syzygyPauseRemaining = 3.0;
             } else if (!syzygyState.isSyzygy) {
@@ -780,11 +805,43 @@ function OrbitalScene({
             performanceMonitor?.end();
             frame = requestAnimationFrame(animate);
         };
+        const alignPlanetsForSyzygy = () => {
+            if (
+                planets.length === 0 ||
+                isBlackHoleRef.current ||
+                currentBlackHoleProgress > 0.0001
+            ) {
+                return;
+            }
+            const refPlanet = planets[planets.length - 1];
+            const referenceAngle = refPlanet.angle + orbitalElapsed * refPlanet.speed;
+            planets.forEach((p) => {
+                p.angle = referenceAngle - orbitalElapsed * p.speed;
+            });
+        };
+
+        const unregisterMissionDeck = registerMissionDeck({
+            onSelect: (dest) => onSelectRef.current(dest),
+            onEscape: () => onEscapeBlackHoleRef.current?.(),
+            setWarpMultiplier: (m) => {
+                consoleWarpMultiplier = m;
+            },
+            alignPlanets: alignPlanetsForSyzygy,
+            getTelemetryState: () => ({
+                speedMultiplier,
+                isBlackHole: Boolean(isBlackHoleRef.current) || currentBlackHoleProgress > 0.0001,
+                syzygyAlignment: latestSyzygyAlignment,
+                orbitalElapsed,
+            }),
+            planets,
+        });
+
         animate(performance.now());
 
         // Cleanup
         return () => {
             isDisposed = true;
+            unregisterMissionDeck();
             savePlanetAngles(planets, orbitalElapsed);
 
             if (frame !== undefined) {

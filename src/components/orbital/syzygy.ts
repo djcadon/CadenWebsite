@@ -109,21 +109,23 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
     ): SyzygyState => {
         // Suppress syzygy during black hole singularity mode or if planets are missing
         if (isBlackHoleActive || planets.length < 2) {
-            currentIntensity = THREE.MathUtils.lerp(currentIntensity, 0, delta * 4.0);
-            if (currentIntensity < 0.005) {
-                syzygyGroup.visible = false;
-                planets.forEach(({ mesh }) => {
-                    const material = mesh.material as THREE.MeshStandardMaterial;
-                    if (material.emissiveIntensity > 0) {
-                        material.emissiveIntensity = 0;
-                    }
-                });
-            }
+            currentIntensity = 0;
+            syzygyGroup.visible = false;
+            coreMaterial.opacity = 0;
+            glowMaterial.opacity = 0;
+            rippleRing.scale.setScalar(1);
+            ringMaterial.opacity = 0;
+            planets.forEach(({ mesh }) => {
+                const material = mesh.material as THREE.MeshStandardMaterial;
+                if (material.emissiveIntensity > 0) {
+                    material.emissiveIntensity = 0;
+                }
+            });
             return {
                 isSyzygy: false,
                 isFullyAligned: false,
                 alignmentScore: 0,
-                intensity: currentIntensity,
+                intensity: 0,
                 angle: 0,
             };
         }
