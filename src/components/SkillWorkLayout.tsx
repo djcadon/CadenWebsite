@@ -1,10 +1,20 @@
 import { motion } from "framer-motion";
 import { sortedExperiences } from "../constants/experiences";
 
+// =============================================================================
+// SKILL WORK EXPLORATION LAYOUT
+// Filters and cross-references professional experiences associated with a skill.
+// =============================================================================
+
 interface SkillWorkLayoutProps {
     skill: string;
     onBack: () => void;
 }
+
+// =============================================================================
+// SKILL MATCHING ALGORITHM
+// Evaluates tool name word boundaries and domain-specific engineering aliases.
+// =============================================================================
 
 const matchSkill = (skillName: string, tools: string[]) => {
     const s = skillName.toLowerCase();

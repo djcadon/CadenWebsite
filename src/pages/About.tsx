@@ -1,3 +1,8 @@
+// =============================================================================
+// ABOUT DESTINATION PAGE
+// Background, education details, engineering philosophy, and extracurricular interests.
+// =============================================================================
+
 function About() {
     return (
         <section className="relative -mx-5 min-h-[calc(100vh-230px)] px-5 pt-12 pb-24 sm:-mx-11 sm:px-11">

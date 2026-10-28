@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 
+// =============================================================================
+// TERMINAL BOOT SPLASH SEQUENCE
+// Retro CRT terminal boot-up animation played once per session upon initial visit.
+// =============================================================================
+
 interface TerminalBootProps {
     onComplete: () => void;
 }
@@ -8,6 +13,11 @@ const BOOT_SESSION_KEY = "caden-orbital-boot-seen";
 const CHARACTER_DELAY_MS = 55;
 const EXIT_FADE_DELAY_MS = 1500;
 const BOOT_COMPLETE_DELAY_MS = 2000;
+
+// =============================================================================
+// TYPEWRITER LINE SIMULATOR
+// Emulates character-by-character typing with blinking phosphor cursor and delays.
+// =============================================================================
 
 interface TerminalSegment {
     text: string;
@@ -150,6 +160,11 @@ function TerminalLine({
         </p>
     );
 }
+
+// =============================================================================
+// TERMINAL BOOT ORCHESTRATOR
+// Steps sequentially through boot sequences and dispatches completion fade-out.
+// =============================================================================
 
 function shouldShowBoot(): boolean {
     // Keep the intro atmospheric on first visit without replaying it on every

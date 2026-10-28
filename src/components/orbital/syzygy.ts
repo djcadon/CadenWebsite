@@ -28,7 +28,9 @@ export interface SyzygySystem {
         delta: number,
         elapsed: number,
         isBlackHoleActive: boolean,
+        speedMultiplier?: number,
     ) => SyzygyState;
+    snapSyzygy: () => void;
     dispose: () => void;
 }
 
@@ -37,7 +39,12 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
     syzygyGroup.visible = false;
     system.add(syzygyGroup);
 
-    // 1. Core Harmonic Laser Beam (passes through Sun from -BEAM_SPAN_RADIUS to +BEAM_SPAN_RADIUS)
+    // =============================================================================
+    // HARMONIC BEAM & PULSE GEOMETRY
+    // Creates core laser filament, glowing outer plasma sheath, and expanding ripple ring.
+    // =============================================================================
+
+    // Core Harmonic Laser Beam (passes through Sun from -BEAM_SPAN_RADIUS to +BEAM_SPAN_RADIUS)
     const beamLength = BEAM_SPAN_RADIUS * 2;
     // Default Three.js cylinder is oriented along the Y axis (-beamLength/2 to +beamLength/2)
     const coreGeometry = new THREE.CylinderGeometry(
@@ -57,7 +64,7 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
     const coreMesh = new THREE.Mesh(coreGeometry, coreMaterial);
     syzygyGroup.add(coreMesh);
 
-    // 2. Translucent Plasma Sheath (outer glowing aura around the laser)
+    // Translucent Plasma Sheath (outer glowing aura around the laser)
     const glowGeometry = new THREE.CylinderGeometry(
         BEAM_GLOW_RADIUS,
         BEAM_GLOW_RADIUS,
@@ -75,7 +82,7 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
     const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
     syzygyGroup.add(glowMesh);
 
-    // 3. Gravitational Harmonic Ripple Ring
+    // Gravitational Harmonic Ripple Ring
     const ringGeometry = new THREE.RingGeometry(1.6, 1.72, PULSE_RING_SEGMENTS);
     ringGeometry.rotateX(-Math.PI / 2);
     const ringMaterial = new THREE.MeshBasicMaterial({
@@ -101,11 +108,22 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
     const alignmentAxis = new THREE.Vector3();
     const cylinderDefaultAxis = new THREE.Vector3(0, 1, 0);
 
+    const snapSyzygy = () => {
+        currentIntensity = 1.0;
+        syzygyGroup.visible = true;
+    };
+
+    // =============================================================================
+    // REAL-TIME COLLINEARITY & RESONANCE DETECTION
+    // Evaluates multi-planet dot products, adjusts warp thresholds, and animates luminescence.
+    // =============================================================================
+
     const updateSyzygy = (
         planets: Planet[],
         delta: number,
         elapsed: number,
         isBlackHoleActive: boolean,
+        speedMultiplier = 1.0,
     ): SyzygyState => {
         // Suppress syzygy during black hole singularity mode or if planets are missing
         if (isBlackHoleActive || planets.length < 2) {
@@ -130,18 +148,18 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
             };
         }
 
-        // 1. Compute exact 3D direction vectors from the Sun to each planet in system space
+        // Compute exact 3D direction vectors from the Sun to each planet in system space
         for (let i = 0; i < planets.length; i++) {
             planets[i].mesh.getWorldPosition(tempWorldPos);
             system.worldToLocal(tempWorldPos);
             planetDirs[i].copy(tempWorldPos).normalize();
         }
 
-        // 2. Outermost planet (Contact) defines the primary reference axis
+        // Outermost planet (Contact) defines the primary reference axis
         const outermostIndex = planets.length - 1;
         alignmentAxis.copy(planetDirs[outermostIndex]);
 
-        // 3. Compute collinearity score |u · v| for every other planet
+        // Compute collinearity score |u · v| for every other planet
         let minCollinearity = 1.0;
         for (let i = 0; i < outermostIndex; i++) {
             const dot = Math.abs(alignmentAxis.dot(planetDirs[i]));
@@ -150,21 +168,29 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
             }
         }
 
-        // 4. Smoothly calculate alignment intensity based on actual collinearity
+        // Dynamic threshold adjustment for high warp speeds to prevent skipping alignments between frames
+        const startThreshold = speedMultiplier > 3 ? 0.965 : SYZYGY_START_THRESHOLD;
+        const peakThreshold = speedMultiplier > 3 ? 0.985 : SYZYGY_PEAK_THRESHOLD;
+
+        // Smoothly calculate alignment intensity based on actual collinearity
         let targetIntensity = 0;
-        if (minCollinearity >= SYZYGY_START_THRESHOLD) {
+        if (minCollinearity >= startThreshold) {
             targetIntensity = THREE.MathUtils.clamp(
-                (minCollinearity - SYZYGY_START_THRESHOLD) /
-                    (SYZYGY_PEAK_THRESHOLD - SYZYGY_START_THRESHOLD),
+                (minCollinearity - startThreshold) / (peakThreshold - startThreshold),
                 0,
                 1,
             );
         }
 
-        const lerpRate = targetIntensity > currentIntensity ? delta * 6.0 : delta * 4.0;
+        // Boost lerp rate with speedMultiplier so rapid alignments snap the beam without lag
+        const warpBoost = Math.max(1, speedMultiplier * 0.8);
+        const lerpRate =
+            targetIntensity > currentIntensity
+                ? Math.min(1.0, delta * 10.0 * warpBoost)
+                : delta * 4.0;
         currentIntensity = THREE.MathUtils.lerp(currentIntensity, targetIntensity, lerpRate);
 
-        const isSyzygyActive = currentIntensity > 0.1;
+        const isSyzygyActive = currentIntensity > 0.08 || minCollinearity >= startThreshold;
         const currentAngle = Math.atan2(alignmentAxis.z, alignmentAxis.x);
 
         if (currentIntensity > 0.005) {
@@ -210,7 +236,8 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
             });
         }
 
-        const isFullyAligned = minCollinearity >= 0.99 || currentIntensity >= 0.85;
+        const fullAlignThreshold = speedMultiplier > 3 ? 0.975 : 0.988;
+        const isFullyAligned = minCollinearity >= fullAlignThreshold || currentIntensity >= 0.8;
 
         return {
             isSyzygy: isSyzygyActive,
@@ -233,6 +260,7 @@ export function createSyzygy(system: THREE.Group, isMobile: boolean): SyzygySyst
 
     return {
         updateSyzygy,
+        snapSyzygy,
         dispose,
     };
 }

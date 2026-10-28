@@ -1,3 +1,8 @@
+// =============================================================================
+// CELESTIAL DESTINATIONS & PLANETARY METADATA
+// Defines physical properties, orbital distances, and signature accent colors.
+// =============================================================================
+
 export const destinations = [
     // distance controls orbit radius, size controls planet scale, and speed
     // controls angular movement in the orbital scene.

@@ -2,13 +2,20 @@ import { useState, useCallback } from "react";
 import type { Planet } from "../components/orbital/planets";
 
 // =============================================================================
-// UNIFIED COMMAND ENGINE & USECOMMANDS HOOK
-// Single source of truth for orbital CLI parsing, history management,
-// on-screen terminal state, and DevTools (window.orbit) integration.
+// UNIFIED ORBITAL COMMAND ENGINE & USECOMMANDS HOOK
+// Single source of truth for orbital CLI parsing, terminal history management,
+// dynamic prompt resolution, and browser DevTools (window.orbit) integration.
 // =============================================================================
 
+// =============================================================================
+// CONSTANTS & CLASSIFIED MEMO DATA
+// Storage keys, valid destinations, and virtual filesystem records.
+// =============================================================================
+
+// Starlight is strictly read-only and persisted across visits
 export const STARLIGHT_STORAGE_KEY = "caden-starlight-captured";
 
+// Valid planetary destination routes and special celestial landmarks
 export const VALID_DESTINATIONS = [
     "about",
     "work",
@@ -18,8 +25,10 @@ export const VALID_DESTINATIONS = [
     "blackhole",
 ] as const;
 
+// Virtual filesystem listing returned by 'ls' and 'dir'
 export const DIRECTORY_LISTING = "about/   work/   skills/   contact/   archive/   secret.txt";
 
+// Easter egg memorandum printed when viewing 'secret.txt' via 'cat'
 export const SECRET_MEMO_LINES = [
     "--------------------------------------------------------",
     "FROM: Caden O'Leary <caden@orbital>",
@@ -27,31 +36,31 @@ export const SECRET_MEMO_LINES = [
     "SUBJECT: Project Horizon & Orbital Architecture",
     "",
     "If you're reading this from the terminal, you appreciate the",
-    "details as much as I do. Built with Three.js, React 19,",
-    "Tailwind CSS, and custom GLSL noise shaders.",
+    "details as much as I do. Built with Three.js, React,",
+    "and Tailwind CSS.",
     "Catch shooting stars, throttle time, and explore the void.",
     "--------------------------------------------------------",
 ];
 
+// Reads persistent captured starlight count from local storage
 export function getStarlightCount(): number {
     return parseInt(localStorage.getItem(STARLIGHT_STORAGE_KEY) || "0", 10);
 }
 
-export function setStarlightCount(newCount: number): number {
-    const clamped = Math.max(0, Math.floor(newCount));
-    localStorage.setItem(STARLIGHT_STORAGE_KEY, clamped.toString());
-    return clamped;
-}
+// =============================================================================
+// VIRTUAL FILE SYSTEM & PATH RESOLUTION
+// Resolves parent directory traversal, root returns, and path normalizations.
+// =============================================================================
 
-export function resolveDestination(
-    rawTarget: string,
-    currentHash = "",
-): {
+export interface ResolvedDestination {
     valid: boolean;
     target: string;
     raw: string;
     message: string;
-} {
+}
+
+// Resolves directory paths into valid routes with Unix-style parent and tilde traversal
+export function resolveDestination(rawTarget: string, currentHash = ""): ResolvedDestination {
     const raw = rawTarget.trim();
     if (!raw) {
         return {
@@ -62,10 +71,10 @@ export function resolveDestination(
         };
     }
 
-    // Normalize Windows backslashes to forward slashes and strip leading hash
+    // Normalize Windows backslashes to forward slashes and strip leading hash symbols
     const clean = raw.toLowerCase().replace(/\\/g, "/").replace(/^#+/, "");
 
-    // 1. Exact parent directory navigation (.. or ../ or multiple ../../)
+    // Exact parent directory navigation (e.g. '..', '../', or chained '../../')
     if (clean === ".." || clean === "../" || /^(\.\.\/?)+$/.test(clean)) {
         return {
             valid: true,
@@ -75,7 +84,7 @@ export function resolveDestination(
         };
     }
 
-    // 2. Current directory (. or ./)
+    // Current directory stay ('.' or './')
     if (clean === "." || clean === "./") {
         return {
             valid: true,
@@ -85,7 +94,7 @@ export function resolveDestination(
         };
     }
 
-    // 3. Normalize path prefixes: "../", "~/", "~", "c:/users/caden/", "/users/caden/", "users/caden/", "./", "/"
+    // Normalize path prefixes: parent hops ('../'), tilde ('~/'), home paths, and slashes
     const dir = clean
         .replace(/^c:\/users\/caden\/?/, "")
         .replace(/^\/?users\/caden\/?/, "")
@@ -94,7 +103,7 @@ export function resolveDestination(
         .replace(/^\.?\/+/, "")
         .replace(/\/+$/, "");
 
-    // If normalized to root (e.g. "~", "~/", "/", "c:/users/caden", "users/caden"), return to home overview
+    // If normalized to root (e.g. '~', '~/', '/', 'c:/users/caden', 'users/caden'), return to home overview
     if (!dir) {
         return {
             valid: true,
@@ -104,7 +113,7 @@ export function resolveDestination(
         };
     }
 
-    // 'home' is the root orbit environment (~), not a subpage directory
+    // 'home' represents the root solar system overview (~), not a nested sub-directory
     if (dir === "home") {
         return {
             valid: false,
@@ -115,6 +124,7 @@ export function resolveDestination(
         };
     }
 
+    // Recognized celestial destinations (planets & special event horizons)
     if ((VALID_DESTINATIONS as readonly string[]).includes(dir)) {
         return {
             valid: true,
@@ -144,6 +154,7 @@ export interface OrbitTelemetryData {
     }>;
 }
 
+// Global developer tools mission interface exposed on window.orbit
 export interface OrbitMissionDeck {
     help: () => void;
     warp: (multiplier?: number) => void;
@@ -170,6 +181,7 @@ declare global {
     }
 }
 
+// Communication callbacks supplied by OrbitalScene.tsx
 export interface MissionDeckCallbacks {
     onSelect: (destination: string) => void;
     onEscape: () => void;
@@ -196,6 +208,12 @@ export interface CommandContext {
     currentHash?: string;
 }
 
+// =============================================================================
+// CORE COMMAND DISPATCH ENGINE
+// Parses user input strings and dispatches flight maneuvers and virtual shell actions.
+// =============================================================================
+
+// Core command interpreter and dispatcher shared by CLI and DevTools
 export function runOrbitalCommand(rawCommand: string, context: CommandContext): CommandOutput[] {
     const trimmed = rawCommand.trim();
     if (!trimmed) return [];
@@ -240,7 +258,17 @@ export function runOrbitalCommand(rawCommand: string, context: CommandContext): 
                 break;
             }
             const clamped = Math.min(Math.max(multiplier, 0.1), 25);
-            if (window.orbit?.warp) {
+            // Warping to max 25x triggers critical mass collapse into the singularity
+            if (clamped >= 25) {
+                if (window.orbit?.warp) {
+                    window.orbit.warp(clamped);
+                } else {
+                    context.onNavigate("blackhole");
+                }
+                out(
+                    `[CRITICAL: MASS LIMIT REACHED] Tachyon throttle pushed to 25.0x maximum! Solar mass collapse triggered into singularity.`,
+                );
+            } else if (window.orbit?.warp) {
                 window.orbit.warp(clamped);
                 out(
                     `[WARP DRIVE] Tachyon throttle set to ${clamped.toFixed(1)}x orbital velocity.`,
@@ -311,8 +339,8 @@ export function runOrbitalCommand(rawCommand: string, context: CommandContext): 
         case "pwd": {
             const path =
                 currentHash && currentHash !== "home"
-                    ? `~/Users/Caden/${currentHash}`
-                    : "~/Users/Caden";
+                    ? `/Users/Caden/${currentHash}`
+                    : "/Users/Caden";
             out(path);
             break;
         }
@@ -413,6 +441,12 @@ export function runOrbitalCommand(rawCommand: string, context: CommandContext): 
 
 let hasPrintedWelcome = false;
 
+// =============================================================================
+// DEVTOOLS CONSOLE BANNER & MISSION DECK (window.orbit)
+// Exposes interactive flight controls and telemetry directly in browser DevTools.
+// =============================================================================
+
+// Prints ASCII greeting to the browser console on startup
 export function printWelcomeBanner(): void {
     if (hasPrintedWelcome) return;
     hasPrintedWelcome = true;
@@ -441,6 +475,7 @@ export function printWelcomeBanner(): void {
     );
 }
 
+// Binds the global window.orbit mission deck interface for DevTools inspection
 export function registerMissionDeck(callbacks: MissionDeckCallbacks): () => void {
     printWelcomeBanner();
 
@@ -459,7 +494,7 @@ export function registerMissionDeck(callbacks: MissionDeckCallbacks): () => void
                 descStyle,
             );
             console.log(
-                "%corbit.syzygy()%c          Instantly align all 4 planets to trigger the resonant Syzygy beam",
+                "%corbit.syzygy()%c          Instantly align all planets to trigger the resonant Syzygy beam",
                 cmdStyle,
                 descStyle,
             );
@@ -506,10 +541,17 @@ export function registerMissionDeck(callbacks: MissionDeckCallbacks): () => void
             } else {
                 const clamped = Math.max(0.1, Math.min(multiplier, 25));
                 callbacks.setWarpMultiplier(clamped);
-                console.log(
-                    `%c[WARP DRIVE] Tachyon throttle engaged: ${clamped.toFixed(1)}x orbital velocity.`,
-                    "color: #f1bd78; font-family: monospace; font-weight: bold;",
-                );
+                if (clamped >= 25) {
+                    console.warn(
+                        "%c[CRITICAL: MASS LIMIT REACHED] Tachyon throttle pushed to 25.0x maximum! Solar mass collapse triggered into singularity.",
+                        "color: #f1bd78; font-family: monospace; font-weight: bold;",
+                    );
+                } else {
+                    console.log(
+                        `%c[WARP DRIVE] Tachyon throttle engaged: ${clamped.toFixed(1)}x orbital velocity.`,
+                        "color: #f1bd78; font-family: monospace; font-weight: bold;",
+                    );
+                }
             }
         },
 
@@ -578,6 +620,7 @@ export function registerMissionDeck(callbacks: MissionDeckCallbacks): () => void
         getTelemetryState: callbacks.getTelemetryState,
     };
 
+    // Getter for black hole active state
     Object.defineProperty(deck, "isBlackHole", {
         get(): boolean {
             return callbacks.getTelemetryState().isBlackHole;
@@ -586,6 +629,7 @@ export function registerMissionDeck(callbacks: MissionDeckCallbacks): () => void
         enumerable: true,
     });
 
+    // Getter and access-denied setter for captured starlight count
     Object.defineProperty(deck, "starlight", {
         get(): number {
             const count = getStarlightCount();
@@ -605,6 +649,7 @@ export function registerMissionDeck(callbacks: MissionDeckCallbacks): () => void
         enumerable: true,
     });
 
+    // Dynamic getter for real-time telemetry readout and formatted console table
     Object.defineProperty(deck, "telemetry", {
         get(): OrbitTelemetryData {
             const state = callbacks.getTelemetryState();
@@ -660,6 +705,7 @@ export interface UseCommandsOptions {
     onClose?: () => void;
 }
 
+// React hook managing terminal output history, dynamic prompt location, and command submission
 export function useCommands({ onNavigate, onClose }: UseCommandsOptions) {
     const [entries, setEntries] = useState<TerminalEntry[]>([
         {
@@ -676,6 +722,7 @@ export function useCommands({ onNavigate, onClose }: UseCommandsOptions) {
     const [history, setHistory] = useState<string[]>([]);
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
+    // Derives the current directory path for the prompt (e.g. '~' or '~/work')
     const getCurrentLocation = useCallback(() => {
         const hash = window.location.hash.slice(1);
         if (!hash || hash === "home") return "~";
@@ -692,6 +739,7 @@ export function useCommands({ onNavigate, onClose }: UseCommandsOptions) {
         setEntries([]);
     }, []);
 
+    // Executes a command string and appends results to the entry log
     const executeCommand = useCallback(
         (rawCommand: string) => {
             const trimmed = rawCommand.trim();
@@ -712,6 +760,7 @@ export function useCommands({ onNavigate, onClose }: UseCommandsOptions) {
         [currentPrompt, addEntry, onNavigate, onClose, clearEntries],
     );
 
+    // Navigates backward through previous commands (ArrowUp)
     const navigateHistoryUp = useCallback((): string | undefined => {
         if (history.length > 0 && historyIndex < history.length - 1) {
             const nextIdx = historyIndex + 1;
@@ -721,6 +770,7 @@ export function useCommands({ onNavigate, onClose }: UseCommandsOptions) {
         return undefined;
     }, [history, historyIndex]);
 
+    // Navigates forward through command history (ArrowDown)
     const navigateHistoryDown = useCallback((): string | undefined => {
         if (historyIndex > 0) {
             const nextIdx = historyIndex - 1;

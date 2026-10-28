@@ -1,5 +1,10 @@
 import type { Experience } from "./types";
 
+// =============================================================================
+// PROFESSIONAL ENGINEERING WORK HISTORY
+// Industry roles, technical contributions, and enterprise tooling stack.
+// =============================================================================
+
 export const work: Experience[] = [
     {
         company: "Cincinnati Incorporated",

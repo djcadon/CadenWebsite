@@ -10,6 +10,11 @@ import Work from "./pages/Work";
 import CommandTerminal from "./components/CommandTerminal";
 import type { DestinationId } from "./constants/destinations";
 
+// =============================================================================
+// ROUTE DEFINITIONS & PAGE REGISTRY
+// Associates canonical hash identifiers with destination page components.
+// =============================================================================
+
 const pages = {
     about: About,
     work: Work,
@@ -20,6 +25,11 @@ const pages = {
 
 type PageId = keyof typeof pages;
 
+// =============================================================================
+// APPLICATION ROOT CONTROLLER
+// Manages lightweight hash routing, keyboard shortcuts, and full-viewport layout.
+// =============================================================================
+
 function App() {
     // The hash provides lightweight page routing while keeping the orbital
     // navigation shareable and compatible with static hosting.
@@ -28,6 +38,11 @@ function App() {
     const [returnFrom, setReturnFrom] = useState<DestinationId | undefined>();
     const [isTerminalOpen, setIsTerminalOpen] = useState(false);
     const Page = pages[page as PageId];
+
+    // =============================================================================
+    // GLOBAL KEYBOARD SHORTCUTS & CLI TOGGLE
+    // Listens for ` or ~ hotkey to toggle the mission terminal drawer.
+    // =============================================================================
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -81,6 +96,11 @@ function App() {
         }
     }, [page]);
 
+    // =============================================================================
+    // ROUTING & DESTINATION TRANSITIONS
+    // Handles history pushState, popstate events, and return planet preservation.
+    // =============================================================================
+
     const navigate = (destination: string) => {
         if (destination === "home") {
             if (window.location.pathname === "/" && !window.location.hash) {
@@ -102,6 +122,11 @@ function App() {
     // Clears the return origin state after the zoom-out animation completes,
     // ensuring subsequent visits don't inappropriately zoom out from the old planet.
     const handleReturnComplete = () => setReturnFrom(undefined);
+
+    // =============================================================================
+    // PLANETARY THEME & ACCENT PALETTES
+    // Dynamic glow classes and accent typography tokens matching the active planet.
+    // =============================================================================
 
     const getGlowClass = (currentPage: string) => {
         switch (currentPage) {
@@ -155,6 +180,11 @@ function App() {
                 return "hover:text-accent";
         }
     };
+
+    // =============================================================================
+    // VIEWPORT RENDERER & ANIMATION CONTAINERS
+    // Transitions between orbital Three.js overview and destination page content.
+    // =============================================================================
 
     return (
         <main className={`mx-auto min-h-dvh w-full px-5 text-text sm:px-11 ${getGlowClass(page)}`}>

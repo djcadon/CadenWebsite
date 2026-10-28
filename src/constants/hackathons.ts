@@ -1,5 +1,10 @@
 import type { Experience } from "./types";
 
+// =============================================================================
+// COMPETITIVE HACKATHONS & AWARD-WINNING PROTOTYPES
+// Rapid hackathon builds, architectural summaries, and project awards.
+// =============================================================================
+
 export const hackathons: Experience[] = [
     {
         company: "MakeUC",

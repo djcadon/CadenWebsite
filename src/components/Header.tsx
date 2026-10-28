@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 
+// =============================================================================
+// CELESTIAL HEADER NAVIGATION
+// Breadcrumb directory bar, cross-page destination links, and terminal affordance.
+// =============================================================================
+
 interface HeaderProps {
     onHome: () => void;
     onToggleTerminal?: () => void;
@@ -40,6 +45,11 @@ function Header({ onHome, onToggleTerminal }: HeaderProps) {
         };
     }, []);
 
+    // =============================================================================
+    // DYNAMIC ACCENT & ACTIVE ROUTE STYLES
+    // Maps routes to distinct celestial planetary palette tokens.
+    // =============================================================================
+
     const getAccentClass = (currentPage: string) => {
         switch (currentPage) {
             case "work":
@@ -73,6 +83,11 @@ function Header({ onHome, onToggleTerminal }: HeaderProps) {
                 return "hover:text-accent";
         }
     };
+
+    // =============================================================================
+    // HEADER COMPONENT & TELEMETRY CONTROLS
+    // Renders the breadcrumb root link, navigation tabs, CLI button, and online badge.
+    // =============================================================================
 
     return (
         <header className="flex h-[var(--header-height)] min-w-0 flex-none items-center border-b border-line font-mono text-xs uppercase tracking-[.06em] sm:text-sm">

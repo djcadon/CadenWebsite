@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCommands } from "../hooks/useCommands";
 
+// =============================================================================
+// MISSION COMMAND TERMINAL DRAWER
+// Slide-down retro terminal drawer interface powered by the unified useCommands engine.
+// =============================================================================
+
 interface CommandTerminalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -15,6 +20,11 @@ export default function CommandTerminal({ isOpen, onClose, onNavigate }: Command
 
     const { entries, currentPrompt, executeCommand, navigateHistoryUp, navigateHistoryDown } =
         useCommands({ onNavigate, onClose });
+
+    // =============================================================================
+    // INPUT HANDLING & TERMINAL HOTKEYS
+    // Manages autofocus, auto-scroll, command submission, and arrow key history navigation.
+    // =============================================================================
 
     // Auto-focus input when terminal opens
     useEffect(() => {
@@ -55,6 +65,11 @@ export default function CommandTerminal({ isOpen, onClose, onNavigate }: Command
         }
     };
 
+    // =============================================================================
+    // PRESENTATIONAL DRAWER LAYOUT
+    // Header status bar, scrollable output stream, and dynamic command prompt input.
+    // =============================================================================
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -64,7 +79,7 @@ export default function CommandTerminal({ isOpen, onClose, onNavigate }: Command
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: "-100%", opacity: 0 }}
                     transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                    className="fixed inset-x-0 top-0 z-50 flex max-h-[60vh] flex-col border-b border-accent/40 bg-bg/95 font-mono shadow-2xl backdrop-blur-md"
+                    className="fixed inset-x-0 top-0 z-50 flex max-h-[50vh] flex-col border-b border-accent/40 bg-bg/95 font-mono shadow-2xl backdrop-blur-md"
                 >
                     {/* Terminal Title Bar */}
                     <div className="flex h-8 items-center justify-between border-b border-line/80 px-4 text-xs text-muted">

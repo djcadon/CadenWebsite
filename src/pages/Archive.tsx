@@ -1,6 +1,11 @@
 import { motion } from "framer-motion";
 import { sortedExperiences } from "../constants/experiences";
 
+// =============================================================================
+// ARCHIVE DESTINATION PAGE
+// Historical engineering endeavors, early prototypes, and past leadership roles.
+// =============================================================================
+
 function Archive() {
     const archivedExperiences = sortedExperiences.filter((experience) =>
         experience.roles.some((role) => role.archive),

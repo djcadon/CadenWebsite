@@ -2,6 +2,11 @@ import { useState, lazy, Suspense } from "react";
 import TerminalBoot from "../components/TerminalBoot";
 import type { DestinationId } from "../constants/destinations";
 
+// =============================================================================
+// ORBITAL HOME VIEWPORT
+// Hosts the lazy-loaded Three.js canvas, boot sequence overlay, and scene transitions.
+// =============================================================================
+
 const OrbitalScene = lazy(() => import("../components/orbital/OrbitalScene"));
 const BOOT_SESSION_KEY = "caden-orbital-boot-seen";
 

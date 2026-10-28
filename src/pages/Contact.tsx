@@ -1,3 +1,8 @@
+// =============================================================================
+// CONTACT DESTINATION PAGE
+// Direct communication channels, vCard download, email, and social profiles.
+// =============================================================================
+
 function Contact() {
     return (
         <section className="relative -mx-5 min-h-[calc(100vh-230px)] px-5 pt-12 pb-24 sm:-mx-11 sm:px-11">

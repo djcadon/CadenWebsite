@@ -1,3 +1,8 @@
+// =============================================================================
+// CAREER EXPERIENCE & PROJECT DATA MODELS
+// Core data structures for work roles, timelines, tools, and organizations.
+// =============================================================================
+
 export interface ExperienceRole {
     archive: boolean;
     title: string;

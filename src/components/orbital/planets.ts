@@ -241,7 +241,7 @@ export function updatePlanets(
     blackHoleProgress = 0,
     orbitLines: THREE.LineLoop[] = [],
 ): void {
-    // 1. Fade orbit line loops as matter gets consumed by the singularity
+    // Fade orbit line loops as matter gets consumed by the singularity
     if (orbitLines.length > 0) {
         const lineOpacity = Math.max(0, (1 - blackHoleProgress * 1.8) * ORBIT_LINE_OPACITY);
         orbitLines.forEach((line) => {
@@ -267,7 +267,7 @@ export function updatePlanets(
             return;
         }
 
-        // 2. Staggered infall: inner planets (Work, r=3.4) plunge first, outer planets (Contact, r=13.0) plunge last
+        // Staggered infall: inner planets (Work, r=3.4) plunge first, outer planets (Contact, r=13.0) plunge last
         const staggerStart = index * INFALL_STAGGER_STEP;
         const planetProgress = THREE.MathUtils.clamp(
             (blackHoleProgress - staggerStart) / INFALL_PROGRESS_WINDOW,

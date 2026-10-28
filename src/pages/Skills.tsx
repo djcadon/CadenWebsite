@@ -2,6 +2,11 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import SkillWorkLayout from "../components/SkillWorkLayout";
 
+// =============================================================================
+// SKILLS DESTINATION PAGE
+// Categorized technical competencies with interactive drill-down to matching work.
+// =============================================================================
+
 const skillGroups: Record<string, string[]> = {
     Languages: ["Python", "C++", "C#", "C", "JavaScript", "TypeScript", "Bash / PowerShell"],
     "Frameworks & Libraries": [

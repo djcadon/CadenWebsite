@@ -1,5 +1,10 @@
 import type { Experience } from "./types";
 
+// =============================================================================
+// ENGINEERING ORGANIZATIONS & SATELLITE TEAMS
+// University research teams, CubeSat ground station leadership, and club roles.
+// =============================================================================
+
 export const organizations: Experience[] = [
     {
         company: "UC CubeCats",
