@@ -4,6 +4,12 @@ import type { ThreePerf as ThreePerfInstance } from "three-perf";
 import { destinations, type DestinationId } from "../../constants/destinations";
 import { createStarField, createShootingStar } from "./stars";
 import { createSun } from "./sun";
+import { createSyzygy } from "./syzygy";
+import {
+    registerMissionDeck,
+    STARLIGHT_STORAGE_KEY,
+    getStarlightCount,
+} from "../../hooks/useCommands";
 import {
     createPlanetSystem,
     updatePlanets,
@@ -69,14 +75,13 @@ const RETURN_ZOOM_DURATION_SECONDS = 1.5; // Duration of zoom-out return animati
 // TIME ACCELERATION & TACHYON OVERDRIVE EASTER EGG
 // Configures orbital speed boost on Spacebar hold and collapse into black hole.
 // =============================================================================
-const TIME_ACCEL_STANDARD_MULTIPLIER = 6.0; // Baseline time dilation speed
-const TIME_ACCEL_OVERDRIVE_MULTIPLIER = 10.0; // Tachyon overload peak speed
+const TIME_ACCEL_STANDARD_MULTIPLIER = 10.0; // Baseline time dilation speed
+const TIME_ACCEL_OVERDRIVE_MULTIPLIER = 25.0; // Tachyon overload peak speed & collapse threshold
 const TIME_ACCEL_LERP_FACTOR = 0.08; // Smooth transition rate into acceleration
 const TIME_DECEL_LERP_FACTOR = 0.06; // Smooth deceleration rate back to normal time
 const OVERDRIVE_WARNING_SECONDS = 2.4; // Continuous hold time before tachyon overload begins
 const OVERDRIVE_COLLAPSE_SECONDS = 4.4; // Continuous hold time triggering gravitational collapse
 const SUN_HUD_OFFSET_Y = 3.2; // Local vertical offset above sun for telemetry HUD
-const STARLIGHT_STORAGE_KEY = "caden-starlight-captured";
 const STARLIGHT_TOAST_DURATION_MS = 2000; // Duration spatial starlight badge remains visible
 
 // =============================================================================
@@ -115,6 +120,7 @@ function OrbitalScene({
     const isBlackHoleRef = useRef(isBlackHole);
     const onEscapeBlackHoleRef = useRef(onEscapeBlackHole);
     const blackHoleUIActiveRef = useRef(false);
+    const triggerEscapeRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         onSelectRef.current = onSelect;
@@ -240,13 +246,13 @@ function OrbitalScene({
             isMobile,
             savedPlanetAngles,
         );
+        const { updateSyzygy, snapSyzygy, dispose: disposeSyzygy } = createSyzygy(system, isMobile);
 
         // Return zoom state
         let returning = false;
-        const returnStartedAt = 0;
         let returnStartPosition: THREE.Vector3 | null = null;
         let returningMesh: THREE.Mesh | null = null;
-        const returnTargetPosition = new THREE.Vector3(0, ORBIT_VERTICAL_OFFSET, 0);
+        const returnLookAtScratch = new THREE.Vector3();
         const overviewTarget = new THREE.Vector3(0, ORBIT_VERTICAL_OFFSET, 0);
 
         const returningPlanet = planets.find(
@@ -305,8 +311,7 @@ function OrbitalScene({
         const tempCatchVector = new THREE.Vector3();
 
         const triggerStarlightCapture = (worldPosition: THREE.Vector3) => {
-            const currentCount =
-                parseInt(localStorage.getItem(STARLIGHT_STORAGE_KEY) || "0", 10) + 1;
+            const currentCount = getStarlightCount() + 1;
             localStorage.setItem(STARLIGHT_STORAGE_KEY, currentCount.toString());
 
             if (starlightBadgeRef.current && starlightTextRef.current) {
@@ -409,7 +414,20 @@ function OrbitalScene({
         let isAccelerating = false;
         let speedMultiplier = 1.0;
         let orbitalElapsed = 0;
+        let consoleWarpMultiplier: number | null = null;
         let sunHoldTimer: number | undefined;
+
+        const triggerEscape = () => {
+            consoleWarpMultiplier = null;
+            isBlackHoleRef.current = false;
+            blackHoleUIActiveRef.current = false;
+            if (blackHoleHudRef.current) {
+                blackHoleHudRef.current.style.display = "none";
+            }
+            setBlackHoleUIActive(false);
+            onEscapeBlackHoleRef.current?.();
+        };
+        triggerEscapeRef.current = triggerEscape;
 
         const isEditableElement = (element: Element | null): boolean => {
             if (!element) return false;
@@ -424,13 +442,7 @@ function OrbitalScene({
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape" || event.code === "Escape") {
                 if (isBlackHoleRef.current) {
-                    isBlackHoleRef.current = false;
-                    blackHoleUIActiveRef.current = false;
-                    if (blackHoleHudRef.current) {
-                        blackHoleHudRef.current.style.display = "none";
-                    }
-                    setBlackHoleUIActive(false);
-                    onEscapeBlackHoleRef.current?.();
+                    triggerEscape();
                     return;
                 }
             }
@@ -521,6 +533,9 @@ function OrbitalScene({
         let currentBlackHoleProgress = 0;
         let accelHoldTime = 0;
         let isTriggeringCollapse = false;
+        let syzygyPauseRemaining = 0;
+        let syzygyPauseTriggered = false;
+        let latestSyzygyAlignment = 0;
         const sunHudAnchor = new THREE.Vector3();
 
         const animate = (timestamp: number) => {
@@ -541,6 +556,16 @@ function OrbitalScene({
                     0.0,
                     currentBlackHoleProgress - delta / BLACKHOLE_ESCAPE_DURATION_SECONDS,
                 );
+            }
+
+            const isBlackHoleTransitioning = currentBlackHoleProgress > 0.0001;
+            const isBlackHoleMode =
+                isBlackHoleActive || isBlackHoleTransitioning || isTriggeringCollapse;
+
+            // Immediately abort any syzygy pause if the black hole singularity is active or transitioning
+            if (isBlackHoleMode) {
+                syzygyPauseRemaining = 0;
+                syzygyPauseTriggered = false;
             }
 
             const shouldShowBlackHoleUI = isBlackHoleActive && currentBlackHoleProgress > 0.08;
@@ -584,6 +609,19 @@ function OrbitalScene({
                 } else {
                     targetMultiplier = TIME_ACCEL_STANDARD_MULTIPLIER;
                 }
+            } else if (
+                consoleWarpMultiplier !== null &&
+                !zoomTarget &&
+                !returning &&
+                !isBlackHoleActive
+            ) {
+                targetMultiplier = consoleWarpMultiplier;
+                if (consoleWarpMultiplier >= 25 && !isBlackHoleMode) {
+                    isTriggeringCollapse = true;
+                    accelHoldTime = 0;
+                    consoleWarpMultiplier = null;
+                    onSelectRef.current("blackhole");
+                }
             } else {
                 accelHoldTime = 0;
             }
@@ -593,21 +631,26 @@ function OrbitalScene({
                     ? TIME_ACCEL_LERP_FACTOR
                     : TIME_DECEL_LERP_FACTOR;
             speedMultiplier = THREE.MathUtils.lerp(speedMultiplier, targetMultiplier, lerpFactor);
-            if (!isAccelerating && Math.abs(speedMultiplier - 1.0) < 0.01) {
+            if (
+                !isAccelerating &&
+                consoleWarpMultiplier === null &&
+                Math.abs(speedMultiplier - 1.0) < 0.01
+            ) {
                 speedMultiplier = 1.0;
             }
 
-            orbitalElapsed += delta * speedMultiplier;
+            if (syzygyPauseRemaining > 0) {
+                syzygyPauseRemaining = Math.max(0, syzygyPauseRemaining - delta);
+            } else {
+                orbitalElapsed += delta * speedMultiplier;
+            }
 
-            // 1. Update planets along their orbits (with black hole infall & orbit line fading)
+            // Update planets along their orbits (with black hole infall & orbit line fading)
             updatePlanets(planets, orbitalElapsed, currentBlackHoleProgress, orbitLines);
 
-            // 2. Camera transitions (return zoom-out, planet zoom-in, or black hole descent)
+            // Camera transitions (return zoom-out, planet zoom-in, or black hole descent)
             if (returning) {
-                const progress = Math.min(
-                    (elapsed - returnStartedAt) / RETURN_ZOOM_DURATION_SECONDS,
-                    1,
-                );
+                const progress = Math.min(elapsed / RETURN_ZOOM_DURATION_SECONDS, 1);
                 const easedProgress = progress * progress * (3 - 2 * progress);
 
                 if (returningMesh) {
@@ -622,8 +665,8 @@ function OrbitalScene({
                         overviewPosition,
                         easedProgress,
                     );
-                    returnTargetPosition.lerpVectors(targetPosition, overviewTarget, easedProgress);
-                    camera.lookAt(returnTargetPosition);
+                    returnLookAtScratch.lerpVectors(targetPosition, overviewTarget, easedProgress);
+                    camera.lookAt(returnLookAtScratch);
                 } else if (returnStartPosition) {
                     camera.position.lerpVectors(
                         returnStartPosition,
@@ -679,7 +722,7 @@ function OrbitalScene({
                 }
             }
 
-            // 3. HTML label tracking
+            // HTML label tracking
             planets.forEach(({ mesh }) => {
                 const projected = mesh.getWorldPosition(projectedPosition).project(camera);
                 const label = labelRefs.current[mesh.userData.id];
@@ -696,9 +739,26 @@ function OrbitalScene({
                 }
             });
 
-            // 4. Update visual sub-systems
+            // Update visual sub-systems
             updateTwinkle(orbitalElapsed);
             updateShootingStar(delta);
+            const syzygyState = updateSyzygy(
+                planets,
+                delta,
+                orbitalElapsed,
+                isBlackHoleMode,
+                speedMultiplier,
+            );
+            latestSyzygyAlignment = syzygyState.alignmentScore;
+
+            // Pause the system for 3 seconds upon achieving full planetary alignment
+            if (syzygyState.isFullyAligned && !syzygyPauseTriggered && !isBlackHoleMode) {
+                syzygyPauseTriggered = true;
+                syzygyPauseRemaining = 3.0;
+                snapSyzygy();
+            } else if (!syzygyState.isSyzygy && syzygyPauseRemaining <= 0) {
+                syzygyPauseTriggered = false;
+            }
 
             // The central star smoothly collapses over the first ~75% of the sequence
             const shaderProgress = isBlackHoleActive
@@ -706,10 +766,13 @@ function OrbitalScene({
                 : currentBlackHoleProgress;
             updateSun(orbitalElapsed, shaderProgress);
 
-            // 5. Update Sun Telemetry HUD readout
+            // Update Sun Telemetry HUD readout
             if (sunTelemetryRef.current && sunTelemetryTextRef.current) {
                 const showTelemetry =
-                    (speedMultiplier > 1.05 || isTriggeringCollapse) &&
+                    (speedMultiplier > 1.05 ||
+                        isTriggeringCollapse ||
+                        syzygyState.isSyzygy ||
+                        syzygyPauseRemaining > 0) &&
                     currentBlackHoleProgress < 0.08;
                 if (showTelemetry) {
                     sunTelemetryRef.current.style.opacity = "1";
@@ -725,6 +788,20 @@ function OrbitalScene({
                             overdriveProgress >= 0.55
                                 ? "[CRITICAL: MASS LIMIT REACHED // IMPLOSION]"
                                 : `[TACHYON OVERLOAD // ${speedMultiplier.toFixed(1)}X]`;
+                    } else if (syzygyPauseRemaining > 0) {
+                        const secondsLeft = Math.max(1, Math.ceil(syzygyPauseRemaining));
+                        statusMessage = `[ORBITAL SYZYGY // GRAVITATIONAL LOCK: ${secondsLeft}S]`;
+                    } else if (syzygyState.intensity >= 0.65) {
+                        statusMessage =
+                            speedMultiplier > 1.05
+                                ? `[ORBITAL SYZYGY // GRAVITATIONAL RESONANCE // ${speedMultiplier.toFixed(1)}X]`
+                                : "[ORBITAL SYZYGY // GRAVITATIONAL RESONANCE]";
+                    } else if (syzygyState.isSyzygy) {
+                        const alignmentPct = Math.round(syzygyState.alignmentScore * 100);
+                        statusMessage =
+                            speedMultiplier > 1.05
+                                ? `[HARMONIC SYZYGY // ALIGNMENT: ${alignmentPct}% // ${speedMultiplier.toFixed(1)}X]`
+                                : `[HARMONIC SYZYGY // ALIGNMENT: ${alignmentPct}%]`;
                     }
                     sunTelemetryTextRef.current.textContent = statusMessage;
 
@@ -746,11 +823,49 @@ function OrbitalScene({
             performanceMonitor?.end();
             frame = requestAnimationFrame(animate);
         };
+        const alignPlanetsForSyzygy = () => {
+            if (
+                planets.length === 0 ||
+                isBlackHoleRef.current ||
+                currentBlackHoleProgress > 0.0001
+            ) {
+                return;
+            }
+            const refPlanet = planets[planets.length - 1];
+            const referenceAngle = refPlanet.angle + orbitalElapsed * refPlanet.speed;
+            planets.forEach((p) => {
+                p.angle = referenceAngle - orbitalElapsed * p.speed;
+            });
+            syzygyPauseRemaining = 3.0;
+            syzygyPauseTriggered = true;
+            snapSyzygy();
+        };
+
+        const unregisterMissionDeck = registerMissionDeck({
+            onSelect: (dest) => onSelectRef.current(dest),
+            onEscape: () => {
+                triggerEscape();
+            },
+            setWarpMultiplier: (m) => {
+                consoleWarpMultiplier = m;
+            },
+            alignPlanets: alignPlanetsForSyzygy,
+            getTelemetryState: () => ({
+                speedMultiplier,
+                isBlackHole: Boolean(isBlackHoleRef.current) || currentBlackHoleProgress > 0.0001,
+                syzygyAlignment: latestSyzygyAlignment,
+                orbitalElapsed,
+            }),
+            planets,
+        });
+
         animate(performance.now());
 
         // Cleanup
         return () => {
+            triggerEscapeRef.current = null;
             isDisposed = true;
+            unregisterMissionDeck();
             savePlanetAngles(planets, orbitalElapsed);
 
             if (frame !== undefined) {
@@ -764,6 +879,7 @@ function OrbitalScene({
             }
             disposeShootingStar();
             disposeSun();
+            disposeSyzygy();
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
             window.removeEventListener("blur", handleWindowBlur);
@@ -846,13 +962,7 @@ function OrbitalScene({
                     <button
                         type="button"
                         onClick={() => {
-                            isBlackHoleRef.current = false;
-                            blackHoleUIActiveRef.current = false;
-                            if (blackHoleHudRef.current) {
-                                blackHoleHudRef.current.style.display = "none";
-                            }
-                            setBlackHoleUIActive(false);
-                            onEscapeBlackHoleRef.current?.();
+                            triggerEscapeRef.current?.();
                         }}
                         className="cursor-pointer border border-line bg-bg/90 px-4 py-1.5 font-mono text-xs uppercase tracking-wider text-muted transition-colors hover:border-accent hover:text-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     >

@@ -1,6 +1,11 @@
 import { motion } from "framer-motion";
 import { sortedExperiences } from "../constants/experiences";
 
+// =============================================================================
+// WORK DESTINATION PAGE
+// Highlights key active engineering roles, technical responsibilities, and outcomes.
+// =============================================================================
+
 function Work() {
     const recentWork = sortedExperiences.filter((experience) =>
         experience.roles.some((role) => !role.archive),

@@ -263,7 +263,7 @@ export function createShootingStar(
     const tempScreenPos = new THREE.Vector3();
 
     const updateShootingStar = (delta: number) => {
-        // 1. Spawning lifecycle
+        // Spawning lifecycle
         if (shootingStarProgress >= 1 && Math.random() < SHOOTING_STAR_TRIGGER_CHANCE) {
             shootingStarProgress = 0;
             shootingStarStart.set(
@@ -278,7 +278,7 @@ export function createShootingStar(
             shootingStar.lookAt(shootingStarEnd);
         }
 
-        // 2. Trajectory animation
+        // Trajectory animation
         if (shootingStarProgress < 1) {
             shootingStarProgress += delta * SHOOTING_STAR_SPEED;
             shootingStar.position.lerpVectors(
@@ -291,7 +291,7 @@ export function createShootingStar(
             );
         }
 
-        // 3. Stardust explosion simulation
+        // Stardust explosion simulation
         if (burstProgress < 1) {
             burstProgress += delta / BURST_DURATION_SECONDS;
             burstMaterial.opacity = Math.max(0, 1 - burstProgress);

@@ -1,8 +1,12 @@
 /* TEAM */
-Engineer: Caden
-Role: Software Engineer, Data Systems, Industrial Automation
+Engineer: Caden O'Leary
+Contact: olearycb@mail.uc.edu
+Site: https://coleary.wiki
+GitHub: https://github.com/djcadon
+LinkedIn: https://www.linkedin.com/in/cadenoleary/
+Role: Software Engineer
 
 /* SITE */
 Last update: 2026
 Language: English
-Stack: React, TypeScript, Vite, Tailwind CSS v4, Three.js
+Stack: React 19, TypeScript, Vite, Tailwind CSS v4, Three.js, Framer Motion
