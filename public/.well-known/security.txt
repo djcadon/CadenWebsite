@@ -1,0 +1,3 @@
+Contact: mailto:olearycb@mail.uc.edu
+Preferred-Languages: en
+Canonical: https://coleary.wiki/.well-known/security.txt

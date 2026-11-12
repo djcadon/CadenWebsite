@@ -75,7 +75,7 @@ const RETURN_ZOOM_DURATION_SECONDS = 1.5; // Duration of zoom-out return animati
 // TIME ACCELERATION & TACHYON OVERDRIVE EASTER EGG
 // Configures orbital speed boost on Spacebar hold and collapse into black hole.
 // =============================================================================
-const TIME_ACCEL_STANDARD_MULTIPLIER = 6.0; // Baseline time dilation speed
+const TIME_ACCEL_STANDARD_MULTIPLIER = 10.0; // Baseline time dilation speed
 const TIME_ACCEL_OVERDRIVE_MULTIPLIER = 25.0; // Tachyon overload peak speed & collapse threshold
 const TIME_ACCEL_LERP_FACTOR = 0.08; // Smooth transition rate into acceleration
 const TIME_DECEL_LERP_FACTOR = 0.06; // Smooth deceleration rate back to normal time

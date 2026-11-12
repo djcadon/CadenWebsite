@@ -3,8 +3,11 @@ VERSION:3.0
 N:O'Leary;Caden;;;
 FN:Caden O'Leary
 TITLE:Software Engineer
-EMAIL;TYPE=INTERNET:olearycb@mail.uc.edu
-TEL;TYPE=CELL:(937) 242-8875
-URL:https://www.linkedin.com/in/cadenoleary/
-URL:https://github.com/djcadon
+EMAIL;TYPE=INTERNET;TYPE=WORK:olearycb@mail.uc.edu
+TEL;TYPE=CELL:+1-937-242-8875
+URL;TYPE=WORK:https://coleary.wiki/
+URL;TYPE=LinkedIn:https://www.linkedin.com/in/cadenoleary/
+URL;TYPE=GitHub:https://github.com/djcadon
+URL;TYPE=Devpost:https://devpost.com/djcadon
+NOTE:Software Engineer
 END:VCARD
